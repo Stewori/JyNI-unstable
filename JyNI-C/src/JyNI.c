@@ -224,13 +224,27 @@ jobject JyNI_repr(JNIEnv *env, jclass class, jlong handle, jlong tstate)
 jobject JyNI_getItem
 	(JNIEnv *env, jclass class, jlong handle, jobject key, jlong tstate)
 {
+	jputs(__FUNCTION__);
+	if (handle) jputs(Py_TYPE((PyObject*) handle)->tp_name);
+	else jputs("Handle is NULL");
 	ENTER_JyNI
+	jputsLong(__LINE__);
 	PyObject* pkey = JyNI_PyObject_FromJythonPyObject(key);
+	jputsLong(__LINE__);
+	if (pkey) jputs(Py_TYPE(pkey)->tp_name);
+	else jputs("pkey is NULL");
 	PyObject* res = PyObject_GetItem((PyObject*) handle, pkey);
+	jputsLong(__LINE__);
+	if (res) jputs(Py_TYPE(res)->tp_name);
+	else jputs("res is NULL");
 	jobject er = JyNI_JythonPyObject_FromPyObject(res);
+	jputsLong(__LINE__);
 	Py_XDECREF(pkey);
+	jputsLong(__LINE__);
 	Py_XDECREF(res);
+	jputsLong(__LINE__);
 	LEAVE_JyNI
+	jputsLong(__LINE__);
 	return er;
 }
 
