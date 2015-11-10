@@ -165,10 +165,11 @@ jobject JyNI_callPyCPeer(JNIEnv *env, jclass class, jlong peerHandle, jobject ar
 jobject JyNI_getAttrString(JNIEnv *env, jclass class, jlong handle, jstring name, jlong tstate)
 {
 	//printf("JyNI_getAttrString %i\n", tstate);
-	//jputs("JyNI_getAttrString");
+	jputs("JyNI_getAttrString");
 	//jputsLong(tstate);
 	if (handle == 0) return NULL;
 	cstr_from_jstring(cName, name);
+	jputs(cName);
 	ENTER_JyNI
 	//jint ensresult = (*env)->EnsureLocalCapacity(env, 100);
 	//jputs("ensresult:");
@@ -224,27 +225,24 @@ jobject JyNI_repr(JNIEnv *env, jclass class, jlong handle, jlong tstate)
 jobject JyNI_getItem
 	(JNIEnv *env, jclass class, jlong handle, jobject key, jlong tstate)
 {
-	jputs(__FUNCTION__);
-	if (handle) jputs(Py_TYPE((PyObject*) handle)->tp_name);
-	else jputs("Handle is NULL");
+//	jputs(__FUNCTION__);
+//	if (handle) jputs(Py_TYPE((PyObject*) handle)->tp_name);
+//	else jputs("Handle is NULL");
 	ENTER_JyNI
-	jputsLong(__LINE__);
+//	jputsLong(__LINE__);
 	PyObject* pkey = JyNI_PyObject_FromJythonPyObject(key);
-	jputsLong(__LINE__);
-	if (pkey) jputs(Py_TYPE(pkey)->tp_name);
-	else jputs("pkey is NULL");
+//	jputsLong(__LINE__);
+//	if (pkey) jputs(Py_TYPE(pkey)->tp_name);
+//	else jputs("pkey is NULL");
 	PyObject* res = PyObject_GetItem((PyObject*) handle, pkey);
-	jputsLong(__LINE__);
-	if (res) jputs(Py_TYPE(res)->tp_name);
-	else jputs("res is NULL");
+//	jputsLong(__LINE__);
+//	if (res) jputs(Py_TYPE(res)->tp_name);
+//	else jputs("res is NULL");
 	jobject er = JyNI_JythonPyObject_FromPyObject(res);
-	jputsLong(__LINE__);
 	Py_XDECREF(pkey);
-	jputsLong(__LINE__);
 	Py_XDECREF(res);
-	jputsLong(__LINE__);
 	LEAVE_JyNI
-	jputsLong(__LINE__);
+//	jputsLong(__LINE__);
 	return er;
 }
 
@@ -1502,6 +1500,7 @@ inline PyObject* JyNI_AllocNativeVar(PyTypeObject* type, Py_ssize_t nitems)
 	PyObject *obj;
 	size_t size = _PyObject_VAR_SIZE(type, nitems+1);
 	/* note that we need to add one, for the sentinel */
+	printf("JyNI_AllocNativeVar %s of size %d\n", type->tp_name, size);
 //	jputs(__FUNCTION__);
 //	jputs(type->tp_name);
 //	jputsLong((jlong) size);

@@ -32,7 +32,8 @@ Created on 03.10.2015
 import sys
 
 #Include native ctypes:
-sys.path.append('/usr/lib/python2.7/lib-dynload')
+#sys.path.append('/usr/lib/python2.7/lib-dynload')
+sys.path.append('/home/stefan/eclipseWorkspace/ctypes')
 
 import platform
 isMac = platform.java_ver()[-1][0] == 'Mac OS X' or platform.mac_ver()[0] != ''
@@ -47,13 +48,22 @@ if isMac:
 else:
 	libc = ctypes.CDLL('libc.so.6')
 
+class Bottles:
+	def __init__(self, number):
+		self._as_parameter_ = number
+
 print libc
 print type(libc.strlen)
 print libc.strlen
 print libc.strlen("abcdef")
 print "--------------------"
 printf = libc.printf
-printf("%d bottles of beer\n", 42)
+# printf("%d bottles of beer\n", 42)
+# printf("%d bottles of beer\n", Bottles(73))
+
+#from ctypes import c_char_p, c_int, c_double
+#printf.argtypes = [c_char_p, c_char_p, c_int, c_double]
+#printf("String '%s', Int %d, Double %f\n", "Hi", 10, 2.2)
 
 from ctypes import *
 class cell(Structure):
@@ -64,17 +74,35 @@ print "Testing ctypes-pointers:"
 cell._fields_ = [("name", c_char_p), ("next", POINTER(cell))]
 c1 = cell()
 c1.name = "foo"
-c2 = cell()
-c2.name = "bar"
-c1.next = pointer(c2)
-c2.next = pointer(c1)
+#c2 = cell()
+#c2.name = "bar"
+c1.next = pointer(c1)
+#c2.next = pointer(c1)
 p = c1
-for i in range(8):
-	print p.name,
-	p = p.next[0]
-print "\n--------------------"
-print "exited normally"
-print "i.e. demo successful"
-print ""
-print "======in JyNI-case expect native output after these lines on some consoles====="
-print "=====(it is a JNI issue that native output is displayed after java output)====="
+print p.next[0]
+# for i in range(8):
+# 	print p.name,
+# 	p = p.next[0]
+# print ''
+# print c_int
+# print c_int.mro()
+# print type(c_int)
+# IntArray5 = c_int * 5
+# ia = IntArray5(5, 1, 7, 33, 99)
+# #ia = [5, 1, 7, 33, 99]
+# qsort = libc.qsort
+# 
+# def py_cmp_func(a, b):
+# 	print "py_cmp_func", a, b
+# 	return 0
+# 
+# CMPFUNC = CFUNCTYPE(c_int, POINTER(c_int), POINTER(c_int))
+# cmp_func = CMPFUNC(py_cmp_func)
+# qsort(ia, len(ia), sizeof(c_int), cmp_func)
+
+print "--------------------"
+# print "exited normally"
+# print "i.e. demo successful"
+# print ""
+# print "======in JyNI-case expect native output after these lines on some consoles====="
+# print "=====(it is a JNI issue that native output is displayed after java output)====="

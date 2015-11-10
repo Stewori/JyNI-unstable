@@ -162,48 +162,50 @@ _PyObject_LengthHint(PyObject *o, Py_ssize_t defaultvalue)
 PyObject *
 PyObject_GetItem(PyObject *o, PyObject *key)
 {
-	jputs(__FUNCTION__);
-	if (PyString_CheckExact(key))
-		jputs(PyString_AS_STRING(key));
-	else {
-		jputs("Key-type:");
-		jputs(Py_TYPE(key)->tp_name);
-	}
+//	jputs(__FUNCTION__);
+//	if (PyString_CheckExact(key))
+//		jputs(PyString_AS_STRING(key));
+//	else {
+//		jputs("Key-type:");
+//		jputs(Py_TYPE(key)->tp_name);
+//	}
 	PyMappingMethods *m;
-	jputsLong(__LINE__);
+//	jputsLong(__LINE__);
 	if (o == NULL || key == NULL) {
-		jputsLong(__LINE__);
+//		jputsLong(__LINE__);
 		return null_error();
 	}
-	jputsLong(__LINE__);
+//	jputsLong(__LINE__);
 	m = o->ob_type->tp_as_mapping;
-	jputsLong(__LINE__);
-	if (m && m->mp_subscript)
-		return m->mp_subscript(o, key);
-	jputsLong(__LINE__);
+//	jputsLong(__LINE__);
+	if (m && m->mp_subscript) {
+		return m->mp_subscript(o, key); // Hier krachts!
+	}
+	//m->mp_subscript hat auf mac u.U. seltsamen Wert fffffffff5 oder so
+//	jputsLong(__LINE__);
 	if (o->ob_type->tp_as_sequence) {
-		jputsLong(__LINE__);
+//		jputsLong(__LINE__);
 		if (PyIndex_Check(key)) {
 			Py_ssize_t key_value;
 			key_value = PyNumber_AsSsize_t(key, PyExc_IndexError);
-			jputsLong(__LINE__);
-			jputsLong(key_value);
+//			jputsLong(__LINE__);
+//			jputsLong(key_value);
 			if (key_value == -1 && PyErr_Occurred()) {
-				jputsLong(__LINE__);
+//				jputsLong(__LINE__);
 				return NULL;
 			}
-			jputsLong(__LINE__);
+//			jputsLong(__LINE__);
 			return PySequence_GetItem(o, key_value);
 		}
 		else if (o->ob_type->tp_as_sequence->sq_item) {
-			jputsLong(__LINE__);
+//			jputsLong(__LINE__);
 			return type_error("sequence index must "
 							  "be integer, not '%.200s'", key);
 		}
 	}
-	jputsLong(__LINE__);
+//	jputsLong(__LINE__);
 	JyNICheckSubtype(o);
-	jputsLong(__LINE__);
+//	jputsLong(__LINE__);
 	return type_error("'%.200s' object has no attribute '__getitem__'", o);
 }
 
@@ -2613,8 +2615,8 @@ PyObject_Call(PyObject *func, PyObject *arg, PyObject *kw)
 	}
 	else
 	{
-//		jputs("PyObject_Call no delegate");
-//		jputs(func->ob_type->tp_name);
+//		puts("PyObject_Call no delegate");
+//		puts(func->ob_type->tp_name);
 		ternaryfunc call;
 
 		if ((call = func->ob_type->tp_call) != NULL) {
@@ -2659,14 +2661,14 @@ call_function_tail(PyObject *callable, PyObject *args)
 
 		a = PyTuple_New(1);
 		if (a == NULL) {
-			//Py_DECREF(args); //todo: check what's the issue here and fix it (maybey related to broken gc)
+			//Py_DECREF(args); //todo: check what's the issue here and fix it (maybe related to broken gc)
 			return NULL;
 		}
 		PyTuple_SET_ITEM(a, 0, args);
 		args = a;
 	}
 	retval = PyObject_Call(callable, args, NULL);
-	//Py_DECREF(args); //todo: check what's the issue here and fix it (maybey related to broken gc)
+	//Py_DECREF(args); //todo: check what's the issue here and fix it (maybe related to broken gc)
 	return retval;
 }
 

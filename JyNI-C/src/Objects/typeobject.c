@@ -754,9 +754,9 @@ static PyObject *
 type_call(PyTypeObject *type, PyObject *args, PyObject *kwds)
 {
 	PyObject *obj;
-//	jputs("type_call:");
-//	if (type->tp_name) jputs(type->tp_name);
-//	else jputs("name is null");
+//	puts("type_call:");
+//	if (type->tp_name) puts(type->tp_name);
+//	else puts("name is null");
 	if (type->tp_new == NULL) {
 		PyErr_Format(PyExc_TypeError,
 					 "cannot create '%.100s' instances (raised in type_call)",
@@ -764,7 +764,9 @@ type_call(PyTypeObject *type, PyObject *args, PyObject *kwds)
 		return NULL;
 	}
 //	jputsLong(__LINE__);
+//	printf("%d\n", __LINE__);
 	obj = type->tp_new(type, args, kwds);
+//	printf("%d\n", __LINE__);
 //	jputsLong(__LINE__);
 	if (obj != NULL) {
 		// Ugly exception: when the call was type(something),
@@ -805,10 +807,12 @@ type_call(PyTypeObject *type, PyObject *args, PyObject *kwds)
 PyObject *
 PyType_GenericAlloc(PyTypeObject *type, Py_ssize_t nitems)
 {
-	//jputs(__FUNCTION__);
+	puts(__FUNCTION__);
+	puts(type->tp_name);
 	TypeMapEntry* tme = JyNI_JythonTypeEntry_FromPyType(type);
 	if (tme)
 	{
+		puts("AllocVar...");
 //		if (tme->py_type->tp_itemsize == 0) return JyNI_Alloc(tme);
 //		else return JyNI_AllocVar(tme, nitems);
 		return JyNI_AllocVar(tme, nitems);
@@ -825,6 +829,7 @@ PyType_GenericAlloc(PyTypeObject *type, Py_ssize_t nitems)
 		if (tme) return JyNI_AllocSubtypeVar(type, tme, nitems);
 //		if (tme->py_type->tp_itemsize == 0) return JyNI_AllocNative(type);
 //		else return JyNI_AllocNativeVar(type, nitems);
+		puts("AllocNativeVar");
 		PyObject* result = JyNI_AllocNativeVar(type, nitems);
 		if (PyType_IS_GC(type))
 			JyNI_GC_ExploreObject(result);
@@ -2196,7 +2201,8 @@ type_init(PyObject *cls, PyObject *args, PyObject *kwds)
 static PyObject *
 type_new(PyTypeObject *metatype, PyObject *args, PyObject *kwds)
 {
-//	jputs("type_new");
+	puts(__FUNCTION__);
+	//printf("type_new %i\n", __LINE__);
 	/*
 	 * Idea: If metatype is a Jython-type (in the hull of a PyJPeer, tbd)
 	 *       or null, use Jython Py.makeClass...
@@ -2240,7 +2246,8 @@ type_new(PyTypeObject *metatype, PyObject *args, PyObject *kwds)
 									 &PyTuple_Type, &bases,
 									 &PyDict_Type, &dict))
 		return NULL;
-
+	//puts(metatype->tp_name);
+	puts(name);
 //	if (strcmp(metatype->tp_name, "_ctypes.PyCSimpleType") == 0) {
 //		jputs("type_new");
 //		jputs(metatype->tp_name);
@@ -2297,8 +2304,8 @@ type_new(PyTypeObject *metatype, PyObject *args, PyObject *kwds)
 		}
 	}
 
-//	jputs("type_new no delegate:");
-//	jputs(metatype->tp_name);
+	puts("type_new no delegate:");
+	puts(metatype->tp_name);
 
 	/*
 	 * JyNI-note:
@@ -2527,9 +2534,10 @@ type_new(PyTypeObject *metatype, PyObject *args, PyObject *kwds)
 	 "return NULL" may leak slots! */
 
 	/* Allocate the type object */
-//	jputs("tp_new_alloc...");
+	puts("tp_new_alloc...");
 	type = (PyTypeObject *)metatype->tp_alloc(metatype, nslots);
-//	jputs("tp_new_alloc done");
+	printf("tp_as_mapping after tp_new_alloc: %d\n", type->tp_as_mapping);
+	//puts("tp_new_alloc done");
 	if (type == NULL) {
 		Py_XDECREF(slots);
 		Py_DECREF(bases);
@@ -2555,13 +2563,16 @@ type_new(PyTypeObject *metatype, PyObject *args, PyObject *kwds)
 	if ((base->tp_flags & Py_TPFLAGS_CHECKTYPES) ||
 		(base->tp_as_number == NULL))
 		type->tp_flags |= Py_TPFLAGS_CHECKTYPES;
-
+	if (type->tp_as_mapping) printf("has mapping, line %d\n", __LINE__);
 	/* Initialize essential fields */
 	type->tp_as_number = &et->as_number;
 	type->tp_as_sequence = &et->as_sequence;
 	type->tp_as_mapping = &et->as_mapping;
 	type->tp_as_buffer = &et->as_buffer;
 	type->tp_name = PyString_AS_STRING(name);
+	printf("mp_subscript after init essential fields: %d\n", type->tp_as_mapping->mp_subscript);
+	printf("mp_subscript in et: %d\n", et->as_mapping.mp_subscript);
+	printf("tp_as_mapping: %d\n", type->tp_as_mapping);
 
 	/* Set tp_base and tp_bases */
 	type->tp_bases = bases;
@@ -2687,10 +2698,13 @@ type_new(PyTypeObject *metatype, PyObject *args, PyObject *kwds)
 	else
 		type->tp_free = PyObject_Free;//PyObject_Del;
 	/* Initialize the rest */
+	printf("mp_subscript before PyType_Ready: %d\n", type->tp_as_mapping->mp_subscript);
+	if (type->tp_as_mapping) printf("has mapping, line %d\n", __LINE__);
 	if (PyType_Ready(type) < 0) {
 		Py_DECREF(type);
 		return NULL;
 	}
+	printf("mp_subscript after PyType_Ready: %d\n", type->tp_as_mapping->mp_subscript);
 	/* Put the proper slots in place */
 	fixup_slot_dispatchers(type);
 	//printf("Dict-offset in line %d: %d\n", __LINE__, type->tp_dictoffset);
@@ -4249,8 +4263,9 @@ static int add_operators(PyTypeObject *);
 int
 PyType_Ready(PyTypeObject *type)
 {
-//	jputs("PyType_Ready:");
-//	jputs(type->tp_name);
+	puts("PyType_Ready:");
+	puts(type->tp_name);
+	if (type->tp_as_mapping) printf("has mapping, line %d\n", __LINE__);
 	//printf("Dict-offset of %s in line %d: %d\n", type->tp_name, __LINE__, type->tp_dictoffset);
 
 	PyObject *dict, *bases;
@@ -4333,6 +4348,8 @@ PyType_Ready(PyTypeObject *type)
 	/*JyNI todo: clean this up...*/
 
 	/* Add type-specific descriptors to tp_dict */
+	if (type->tp_as_mapping)
+		printf("mp_subscript before adding describtors: %d\n", type->tp_as_mapping->mp_subscript);
 	if (add_operators(type) < 0)
 		goto error;
 	if (type->tp_methods != NULL) {
@@ -4349,6 +4366,8 @@ PyType_Ready(PyTypeObject *type)
 	}
 
 	/* Calculate method resolution order */
+	if (type->tp_as_mapping)
+		printf("mp_subscript before calculationg mro: %d\n", type->tp_as_mapping->mp_subscript);
 	if (mro_internal(type) < 0) {
 		goto error;
 	}
@@ -4358,24 +4377,29 @@ PyType_Ready(PyTypeObject *type)
 	/* Inherit special flags from dominant base */
 	if (type->tp_base != NULL)
 		inherit_special(type, type->tp_base);
-
+	if (type->tp_as_mapping)
+		printf("mp_subscript after inherit special: %d\n", type->tp_as_mapping->mp_subscript);
 	/* Initialize tp_dict properly */
 	bases = type->tp_mro;
 	assert(bases != NULL);
 	assert(PyTuple_Check(bases));
 	n = PyTuple_GET_SIZE(bases);
-
+	if (type->tp_as_mapping)
+		printf("mp_subscript before inherit slots: %d\n", type->tp_as_mapping->mp_subscript);
 	for (i = 1; i < n; i++) {
 		PyObject *b = PyTuple_GET_ITEM(bases, i);
 		if (PyType_Check(b))
 		{
-//			puts(type->tp_name);
-//			puts("inherits slots from");
-//			puts(((PyTypeObject *) b)->tp_name);
+			puts(type->tp_name);
+			puts("inherits slots from");
+			puts(((PyTypeObject *) b)->tp_name);
 			inherit_slots(type, (PyTypeObject *)b);
+			if (type->tp_as_mapping)
+				printf("mp_subscript: %d\n", type->tp_as_mapping->mp_subscript);
 		}
 	}
-
+	if (type->tp_as_mapping)
+			printf("mp_subscript after inherit slots: %d\n", type->tp_as_mapping->mp_subscript);
 	// Sanity check for tp_free.
 	//puts("Sanity check tp_free0...");
 //	if (((PyTypeObject*) PyExc_BaseException)->tp_free == NULL)
@@ -4413,7 +4437,11 @@ PyType_Ready(PyTypeObject *type)
 
 	// Some more special stuff
 	//puts("Some more special stuff");
+	if (type->tp_as_mapping)
+			printf("mp_subscript before some special stuff: %d\n", type->tp_as_mapping->mp_subscript);
 	base = type->tp_base;
+	if (base) printf("base type: %s\n", base->tp_name);
+	else puts("base is NULL");
 	if (base != NULL) {
 		if (type->tp_as_number == NULL)
 			type->tp_as_number = base->tp_as_number;
@@ -4424,6 +4452,8 @@ PyType_Ready(PyTypeObject *type)
 		if (type->tp_as_buffer == NULL)
 			type->tp_as_buffer = base->tp_as_buffer;
 	}
+	if (type->tp_as_mapping)
+			printf("mp_subscript after some special stuff: %d\n", type->tp_as_mapping->mp_subscript);
 
 	/* Link into each base class's list of subclasses */
 //	bases = type->tp_bases;
