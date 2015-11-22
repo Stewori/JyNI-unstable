@@ -1261,6 +1261,11 @@ sequence_repeat(ssizeargfunc repeatfunc, PyObject *seq, PyObject *n)
 PyObject *
 PyNumber_Multiply(PyObject *v, PyObject *w)
 {
+//	jputs(__FUNCTION__);
+//	jputs(Py_TYPE(v)->tp_name);
+//	jputs(Py_TYPE(w)->tp_name);
+//	jputs("");
+
 	PyObject *result = binary_op1(v, w, NB_SLOT(nb_multiply));
 	if (result == Py_NotImplemented) {
 		PySequenceMethods *mv = v->ob_type->tp_as_sequence;
@@ -2746,44 +2751,6 @@ PyObject_CallMethod(PyObject *o, char *name, char *format, ...)
 	return retval;
 }
 
-//PyObject *
-//PyObject_CallMethod(PyObject *o, char *name, char *format, ...)
-//{
-//	va_list va;
-//	PyObject *args;
-//	PyObject *func = NULL;
-//	PyObject *retval = NULL;
-//
-//	if (o == NULL || name == NULL)
-//		return null_error();
-//	func = PyObject_GetAttrString(o, name);
-//	if (func == NULL) {
-//		PyErr_SetString(PyExc_AttributeError, name);
-//		return 0;
-//	}
-//
-//	if (!PyCallable_Check(func)) {
-//		type_error("attribute of type '%.200s' is not callable", func);
-//		goto exit;
-//	}
-//
-//	if (format && *format) {
-//		va_start(va, format);
-//		args = Py_VaBuildValue(format, va);
-//		va_end(va);
-//	}
-//	else
-//		args = PyTuple_New(0);
-//
-//	retval = call_function_tail(func, args);
-//
-//  exit:
-//	/* args gets consumed in call_function_tail */
-//	Py_XDECREF(func);
-//
-//	return retval;
-//}
-
 PyObject *
 _PyObject_CallMethod_SizeT(PyObject *o, char *name, char *format, ...)
 {
@@ -3123,139 +3090,139 @@ PyObject_IsInstance(PyObject *inst, PyObject *cls)
 	return recursive_isinstance(inst, cls);
 }
 
-//static  int
-//recursive_issubclass(PyObject *derived, PyObject *cls)
-//{
-//	int retval;
-//
-//	if (PyType_Check(cls) && PyType_Check(derived)) {
-//		/* Fast path (non-recursive) */
-//		return PyType_IsSubtype(
-//			(PyTypeObject *)derived, (PyTypeObject *)cls);
-//	}
-//	if (!PyClass_Check(derived) || !PyClass_Check(cls)) {
-//		if (!check_class(derived,
-//						 "issubclass() arg 1 must be a class"))
-//			return -1;
-//
-//		if (!check_class(cls,
-//						"issubclass() arg 2 must be a class"
-//						" or tuple of classes"))
-//			return -1;
-//		retval = abstract_issubclass(derived, cls);
-//	}
-//	else {
-//		/* shortcut */
-//		if (!(retval = (derived == cls)))
-//			retval = PyClass_IsSubclass(derived, cls);
-//	}
-//
-//	return retval;
-//}
-//
-//int
-//PyObject_IsSubclass(PyObject *derived, PyObject *cls)
-//{
-//	static PyObject *name = NULL;
-//
-//	if (PyTuple_Check(cls)) {
-//		Py_ssize_t i;
-//		Py_ssize_t n;
-//		int r = 0;
-//
-//		if (Py_EnterRecursiveCall(" in __subclasscheck__"))
-//			return -1;
-//		n = PyTuple_GET_SIZE(cls);
-//		for (i = 0; i < n; ++i) {
-//			PyObject *item = PyTuple_GET_ITEM(cls, i);
-//			r = PyObject_IsSubclass(derived, item);
-//			if (r != 0)
-//				/* either found it, or got an error */
-//				break;
-//		}
-//		Py_LeaveRecursiveCall();
-//		return r;
-//	}
-//	if (!(PyClass_Check(cls) || PyInstance_Check(cls))) {
-//		PyObject *checker;
-//		checker = _PyObject_LookupSpecial(cls, "__subclasscheck__", &name);
-//		if (checker != NULL) {
-//			PyObject *res;
-//			int ok = -1;
-//			if (Py_EnterRecursiveCall(" in __subclasscheck__")) {
-//				Py_DECREF(checker);
-//				return ok;
-//			}
-//			res = PyObject_CallFunctionObjArgs(checker, derived, NULL);
-//			Py_LeaveRecursiveCall();
-//			Py_DECREF(checker);
-//			if (res != NULL) {
-//				ok = PyObject_IsTrue(res);
-//				Py_DECREF(res);
-//			}
-//			return ok;
-//		}
-//		else if (PyErr_Occurred()) {
-//			return -1;
-//		}
-//	}
-//	return recursive_issubclass(derived, cls);
-//}
-//
-//int
-//_PyObject_RealIsInstance(PyObject *inst, PyObject *cls)
-//{
-//	return recursive_isinstance(inst, cls);
-//}
-//
-//int
-//_PyObject_RealIsSubclass(PyObject *derived, PyObject *cls)
-//{
-//	return recursive_issubclass(derived, cls);
-//}
-//
-//
-//PyObject *
-//PyObject_GetIter(PyObject *o)
-//{
-//	PyTypeObject *t = o->ob_type;
-//	getiterfunc f = NULL;
-//	if (PyType_HasFeature(t, Py_TPFLAGS_HAVE_ITER))
-//		f = t->tp_iter;
-//	if (f == NULL) {
-//		if (PySequence_Check(o))
-//			return PySeqIter_New(o);
-//		return type_error("'%.200s' object is not iterable", o);
-//	}
-//	else {
-//		PyObject *res = (*f)(o);
-//		if (res != NULL && !PyIter_Check(res)) {
-//			PyErr_Format(PyExc_TypeError,
-//						 "iter() returned non-iterator "
-//						 "of type '%.100s'",
-//						 res->ob_type->tp_name);
-//			Py_DECREF(res);
-//			res = NULL;
-//		}
-//		return res;
-//	}
-//}
-//
-///* Return next item.
-// * If an error occurs, return NULL.  PyErr_Occurred() will be true.
-// * If the iteration terminates normally, return NULL and clear the
-// * PyExc_StopIteration exception (if it was set).  PyErr_Occurred()
-// * will be false.
-// * Else return the next object.  PyErr_Occurred() will be false.
-// */
-//PyObject *
-//PyIter_Next(PyObject *iter)
-//{
-//	PyObject *result;
-//	result = (*iter->ob_type->tp_iternext)(iter);
-//	if (result == NULL &&
-//		PyErr_Occurred() &&
-//		PyErr_ExceptionMatches(PyExc_StopIteration))
-//		PyErr_Clear();
-//	return result;
-//}
+static  int
+recursive_issubclass(PyObject *derived, PyObject *cls)
+{
+	int retval;
+
+	if (PyType_Check(cls) && PyType_Check(derived)) {
+		/* Fast path (non-recursive) */
+		return PyType_IsSubtype(
+			(PyTypeObject *)derived, (PyTypeObject *)cls);
+	}
+	if (!PyClass_Check(derived) || !PyClass_Check(cls)) {
+		if (!check_class(derived,
+						 "issubclass() arg 1 must be a class"))
+			return -1;
+
+		if (!check_class(cls,
+						"issubclass() arg 2 must be a class"
+						" or tuple of classes"))
+			return -1;
+		retval = abstract_issubclass(derived, cls);
+	}
+	else {
+		/* shortcut */
+		if (!(retval = (derived == cls)))
+			retval = PyClass_IsSubclass(derived, cls);
+	}
+
+	return retval;
+}
+
+int
+PyObject_IsSubclass(PyObject *derived, PyObject *cls)
+{
+	static PyObject *name = NULL;
+
+	if (PyTuple_Check(cls)) {
+		Py_ssize_t i;
+		Py_ssize_t n;
+		int r = 0;
+
+		if (Py_EnterRecursiveCall(" in __subclasscheck__"))
+			return -1;
+		n = PyTuple_GET_SIZE(cls);
+		for (i = 0; i < n; ++i) {
+			PyObject *item = PyTuple_GET_ITEM(cls, i);
+			r = PyObject_IsSubclass(derived, item);
+			if (r != 0)
+				/* either found it, or got an error */
+				break;
+		}
+		Py_LeaveRecursiveCall();
+		return r;
+	}
+	if (!(PyClass_Check(cls) || PyInstance_Check(cls))) {
+		PyObject *checker;
+		checker = _PyObject_LookupSpecial(cls, "__subclasscheck__", &name);
+		if (checker != NULL) {
+			PyObject *res;
+			int ok = -1;
+			if (Py_EnterRecursiveCall(" in __subclasscheck__")) {
+				Py_DECREF(checker);
+				return ok;
+			}
+			res = PyObject_CallFunctionObjArgs(checker, derived, NULL);
+			Py_LeaveRecursiveCall();
+			Py_DECREF(checker);
+			if (res != NULL) {
+				ok = PyObject_IsTrue(res);
+				Py_DECREF(res);
+			}
+			return ok;
+		}
+		else if (PyErr_Occurred()) {
+			return -1;
+		}
+	}
+	return recursive_issubclass(derived, cls);
+}
+
+int
+_PyObject_RealIsInstance(PyObject *inst, PyObject *cls)
+{
+	return recursive_isinstance(inst, cls);
+}
+
+int
+_PyObject_RealIsSubclass(PyObject *derived, PyObject *cls)
+{
+	return recursive_issubclass(derived, cls);
+}
+
+
+PyObject *
+PyObject_GetIter(PyObject *o)
+{
+	PyTypeObject *t = o->ob_type;
+	getiterfunc f = NULL;
+	if (PyType_HasFeature(t, Py_TPFLAGS_HAVE_ITER))
+		f = t->tp_iter;
+	if (f == NULL) {
+		if (PySequence_Check(o))
+			return PySeqIter_New(o);
+		return type_error("'%.200s' object is not iterable", o);
+	}
+	else {
+		PyObject *res = (*f)(o);
+		if (res != NULL && !PyIter_Check(res)) {
+			PyErr_Format(PyExc_TypeError,
+						 "iter() returned non-iterator "
+						 "of type '%.100s'",
+						 res->ob_type->tp_name);
+			Py_DECREF(res);
+			res = NULL;
+		}
+		return res;
+	}
+}
+
+/* Return next item.
+ * If an error occurs, return NULL.  PyErr_Occurred() will be true.
+ * If the iteration terminates normally, return NULL and clear the
+ * PyExc_StopIteration exception (if it was set).  PyErr_Occurred()
+ * will be false.
+ * Else return the next object.  PyErr_Occurred() will be false.
+ */
+PyObject *
+PyIter_Next(PyObject *iter)
+{
+	PyObject *result;
+	result = (*iter->ob_type->tp_iternext)(iter);
+	if (result == NULL &&
+		PyErr_Occurred() &&
+		PyErr_ExceptionMatches(PyExc_StopIteration))
+		PyErr_Clear();
+	return result;
+}

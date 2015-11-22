@@ -41,6 +41,7 @@
 #include "JythonSite.h"
 #include "JyList.h"
 #include "JyTState.h"
+#include "JyNI-Debug.h"
 
 // We could alternatively include JyNI-Java/include/JyNI_JyNI.h,
 // but for now it feels more lightweight to simply redefine the
@@ -66,7 +67,7 @@
 #define ENTER_JyNI \
 	PyEval_AcquireLock(); \
 	if (_PyThreadState_Current != NULL) Py_FatalError("ENTER_JyNI: overwriting non-NULL tstate"); \
-	_PyThreadState_Current = tstate;
+	_PyThreadState_Current = (PyThreadState*) tstate;
 
 #define LEAVE_JyNI0 \
 	JyNI_GC_Explore(); \
@@ -408,7 +409,7 @@ typedef void (*jy2pySync)(jobject, PyObject*);
 /* PyObject* is src, jobject is dest. Src must not be modified. */
 typedef void (*py2jySync)(PyObject*, jobject);
 
-typedef jobject (*jyInitSync)(PyObject*);
+typedef jobject (*jyInitSync)(PyObject*, jclass);
 typedef PyObject* (*pyInitSync)(jobject);
 typedef jobject (*jyFactoryMethod)();
 //typedef void (*jy2pyItemSync)(jobject, PyObject*, int index);
@@ -582,6 +583,29 @@ jobject JyNI_getItem(JNIEnv *env, jclass class, jlong handle, jobject key, jlong
 jint JyNI_setItem(JNIEnv *env, jclass class, jlong handle, jobject key, jobject value, jlong tstate);
 jint JyNI_delItem(JNIEnv *env, jclass class, jlong handle, jobject key, jlong tstate);
 jint JyNI_PyObjectLength(JNIEnv *env, jclass class, jlong handle, jlong tstate);
+jobject JyNI_descr_get(jlong self, jobject obj, jobject type, jlong tstate);
+jint JyNI_descr_set(jlong self, jobject obj, jobject value, jlong tstate);
+
+//Number protocol call-ins:
+//(these usually don't need env and class, so we simplified the signatures a bit.)
+jobject JyNI_PyNumber_Add(jlong o1, jobject o2, jlong tstate);
+jobject JyNI_PyNumber_Subtract(jlong o1, jobject o2, jlong tstate);
+jobject JyNI_PyNumber_Multiply(jlong o1, jobject o2, jlong tstate);
+jobject JyNI_PyNumber_Divide(jlong o1, jobject o2, jlong tstate);
+jobject JyNI_PyNumber_FloorDivide(jlong o1, jobject o2, jlong tstate);
+jobject JyNI_PyNumber_TrueDivide(jlong o1, jobject o2, jlong tstate);
+jobject JyNI_PyNumber_Remainder(jlong o1, jobject o2, jlong tstate);
+jobject JyNI_PyNumber_Divmod(jlong o1, jobject o2, jlong tstate);
+jobject JyNI_PyNumber_Power(jlong o1, jobject o2, jobject o3, jlong tstate);
+jobject JyNI_PyNumber_Negative(jlong o, jlong tstate);
+jobject JyNI_PyNumber_Positive(jlong o, jlong tstate);
+jobject JyNI_PyNumber_Absolute(jlong o, jlong tstate);
+jobject JyNI_PyNumber_Invert(jlong o, jlong tstate);
+jobject JyNI_PyNumber_Lshift(jlong o1, jobject o2, jlong tstate);
+jobject JyNI_PyNumber_Rshift(jlong o1, jobject o2, jlong tstate);
+jobject JyNI_PyNumber_And(jlong o1, jobject o2, jlong tstate);
+jobject JyNI_PyNumber_Xor(jlong o1, jobject o2, jlong tstate);
+jobject JyNI_PyNumber_Or(jlong o1, jobject o2, jlong tstate);
 
 #define builtinTypeCount 46
 extern TypeMapEntry builtinTypes[builtinTypeCount];
@@ -690,8 +714,9 @@ inline jobject JyNI_GetJythonDelegate(PyObject* v);
 inline void JyNI_printJInfo(jobject obj);
 inline void JyNI_jprintHash(jobject obj);
 inline void JyNI_jprintJ(jobject obj);
-inline void jputs(const char* msg);
-inline void jputsLong(jlong val);
+//inline void jputs(const char* msg);
+//inline void jputsLong(jlong val);
+//inline void jputsPy(PyObject* o);
 
 /* To save lookups: */
 inline void _PyObject_GC_InitJy(PyObject *op, TypeMapEntry* tme);
@@ -867,6 +892,7 @@ extern jmethodID JyNI_getJythonGlobals;
 
 extern jclass JyTStateClass;
 extern jmethodID JyTState_setRecursionLimit;
+extern jmethodID JyTState_prepareNativeThreadState;
 extern jfieldID JyTState_nativeRecursionLimitField;
 
 extern jclass JyNIDictNextResultClass;
@@ -885,6 +911,7 @@ extern jmethodID JyNIExceptionByName;
 //extern jmethodID JyErr_SetCurExc;
 //extern jmethodID JyErr_GetCurExc;
 extern jmethodID JyNIJyErr_InsertCurExc;
+extern jmethodID JyNIJyErr_PrintEx;
 //extern jmethodID JyNIPyErr_Restore;
 //extern jmethodID JyNIPyErr_Clear;
 //extern jmethodID JyNIPyErr_Occurred;
@@ -922,7 +949,13 @@ extern jclass pyCPeerGCClass;
 extern jmethodID pyCPeerGCConstructor;
 //extern jfieldID pyCPeerLinksHandle;
 
+extern jclass pyCPeerTypeGCClass;
+extern jmethodID pyCPeerTypeGCConstructor;
+extern jmethodID pyCPeerTypeGCConstructorSubtype;
+
 extern jclass pyDictCPeerClass;
+extern jclass pyTupleCPeerClass;
+extern jmethodID pyTupleCPeerConstructor;
 
 extern jclass jyGCHeadClass;
 extern jmethodID traversableGCHeadSetLinks;
@@ -947,8 +980,9 @@ extern jmethodID super__len__;
 extern jmethodID super_toString;
 
 extern jclass pyCPeerTypeClass;
-extern jmethodID pyCPeerTypeConstructor;
+//extern jmethodID pyCPeerTypeConstructor;
 extern jmethodID pyCPeerTypeWithNameAndDictConstructor;
+extern jmethodID pyCPeerTypeWithNameDictTypeConstructor;
 extern jfieldID pyCPeerTypeObjectHandle;
 extern jfieldID pyCPeerTypeRefHandle;
 

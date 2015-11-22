@@ -340,12 +340,14 @@ classmethoddescr_call(PyMethodDescrObject *descr, PyObject *args,
 static PyObject *
 wrapperdescr_call(PyWrapperDescrObject *descr, PyObject *args, PyObject *kwds)
 {
+//	jputs(__FUNCTION__);
 	Py_ssize_t argc;
 	PyObject *self, *func, *result;
 
 	/* Make sure that the first argument is acceptable as 'self' */
 	assert(PyTuple_Check(args));
 	argc = PyTuple_GET_SIZE(args);
+//	jputsLong(argc);
 	if (argc < 1) {
 		PyErr_Format(PyExc_TypeError,
 					 "descriptor '%.300s' of '%.100s' "
@@ -357,6 +359,9 @@ wrapperdescr_call(PyWrapperDescrObject *descr, PyObject *args, PyObject *kwds)
 	self = PyTuple_GET_ITEM(args, 0);
 	if (!_PyObject_RealIsSubclass((PyObject *)Py_TYPE(self),
 								  (PyObject *)(descr->d_type))) {
+//		jputs(Py_TYPE(self)->tp_name);
+//		jputs("is not a subclass of");
+//		jputs(descr->d_type->tp_name);
 		PyErr_Format(PyExc_TypeError,
 					 "descriptor '%.200s' "
 					 "requires a '%.100s' object "
@@ -1130,6 +1135,7 @@ PyTypeObject wrappertype = {
 PyObject *
 PyWrapper_New(PyObject *d, PyObject *self)
 {
+	//jputs(__FUNCTION__);
 	wrapperobject *wp;
 	PyWrapperDescrObject *descr;
 

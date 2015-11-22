@@ -217,6 +217,8 @@ public class JyNI {
 	public static native int setItem(long peerHandle, PyObject key, PyObject value, long tstate);
 	public static native int delItem(long peerHandle, PyObject key, long tstate);
 	public static native int PyObjectLength(long peerHandle, long tstate);
+	public static native PyObject descr_get(long self, PyObject obj, PyObject type, long tstate);
+	public static native int descr_set(long self, PyObject obj, PyObject value, long tstate);
 
 	//ThreadState-stuff:
 	public static native void setNativeRecursionLimit(int nativeRecursionLimit);
@@ -235,6 +237,27 @@ public class JyNI {
 
 	//Set-Stuff:
 	public static native void JySet_putSize(long handle, int size);
+
+	//Number protocol:
+	//public static native int JyNI_PyNumber_Check(long o, long tstate);
+	public static native PyObject JyNI_PyNumber_Add(long o1, PyObject o2, long tstate);
+	public static native PyObject JyNI_PyNumber_Subtract(long o1, PyObject o2, long tstate);
+	public static native PyObject JyNI_PyNumber_Multiply(long o1, PyObject o2, long tstate);
+	public static native PyObject JyNI_PyNumber_Divide(long o1, PyObject o2, long tstate);
+	public static native PyObject JyNI_PyNumber_FloorDivide(long o1, PyObject o2, long tstate);
+	public static native PyObject JyNI_PyNumber_TrueDivide(long o1, PyObject o2, long tstate);
+	public static native PyObject JyNI_PyNumber_Remainder(long o1, PyObject o2, long tstate);
+	public static native PyObject JyNI_PyNumber_Divmod(long o1, PyObject o2, long tstate);
+	public static native PyObject JyNI_PyNumber_Power(long o1, PyObject o2, PyObject o3, long tstate);
+	public static native PyObject JyNI_PyNumber_Negative(long o, long tstate);
+	public static native PyObject JyNI_PyNumber_Positive(long o, long tstate);
+	public static native PyObject JyNI_PyNumber_Absolute(long o, long tstate);
+	public static native PyObject JyNI_PyNumber_Invert(long o, long tstate);
+	public static native PyObject JyNI_PyNumber_Lshift(long o1, PyObject o2, long tstate);
+	public static native PyObject JyNI_PyNumber_Rshift(long o1, PyObject o2, long tstate);
+	public static native PyObject JyNI_PyNumber_And(long o1, PyObject o2, long tstate);
+	public static native PyObject JyNI_PyNumber_Xor(long o1, PyObject o2, long tstate);
+	public static native PyObject JyNI_PyNumber_Or(long o1, PyObject o2, long tstate);
 
 	//ReferenceMonitor- and GC-Stuff:
 	public static native void JyRefMonitor_setMemDebugFlags(int flags);
@@ -827,6 +850,8 @@ public class JyNI {
 //			System.out.println("return "+er);
 //			System.out.println("class: "+er.getClass());
 			return er;
+		} catch (NoSuchFieldException nsfe) {
+			return null;
 		} catch (Exception e) {
 			System.err.println("JyNI-Warning: Could not obtain Exception: "+name);
 			System.err.println("  Reason: "+e);
@@ -898,6 +923,19 @@ public class JyNI {
 	public static void JyErr_InsertCurExc(ThreadState tstate) {
 		ThreadState tstate0 = tstate == null ? Py.getThreadState() : tstate;
 		tstate0.exception = new PyException();
+	}
+
+	public static void JyErr_PrintEx(boolean set_sys_last_vars, ThreadState tstate, PyObject type, PyObject value, PyTraceback traceback) {
+		ThreadState tstate0 = tstate == null ? Py.getThreadState() : tstate;
+		if (set_sys_last_vars) {
+			JyErr_InsertCurExc(tstate0, type, value, traceback);
+			tstate0.exception.normalize();
+			Py.printException(tstate0.exception);
+		} else {
+			PyException exc = new PyException(type, value, traceback);
+			exc.normalize();
+			Py.printException(exc);
+		}
 	}
 
 	/*public static void PyErr_Restore(PyObject type, PyObject value, PyTraceback traceback) {
@@ -1237,7 +1275,8 @@ public class JyNI {
 		static visitRestoreCStubReachables defaultInstance
 				= new visitRestoreCStubReachables();
 
-		Set<PyObject> alreadyExplored = new HashSet<>();
+		//Set<PyObject> alreadyExplored = new HashSet<>();
+		IdentityHashMap<PyObject, PyObject> alreadyExplored = new IdentityHashMap<>();
 		public Stack<PyObject> explorationStack = new Stack<>();
 		
 		public static void clear() {
@@ -1246,19 +1285,21 @@ public class JyNI {
 
 		@Override
 		public int visit(PyObject object, Object arg) {
-			if (alreadyExplored.contains(object))
+			//if (alreadyExplored.contains(object))
+			if (alreadyExplored.containsKey(object))
 				return 0;
 			if (continueCStubExplore(object)) {
 				explorationStack.push(object);
 			}
-			alreadyExplored.add(object);
+			alreadyExplored.put(object, object);
 			CStubReachableRestore(object);
 			return 0;
 		}
 	}
 
 	protected static boolean continueCStubExplore(PyObject obj) {
-		if (JyNICriticalObjectSet.contains(obj)) return false;
+		if (obj instanceof CPeerInterface && JyNICriticalObjectSet.contains(
+				((CPeerInterface) obj).getHandle())) return false;
 		if (!gc.isTraversable(obj)) return false;
 		long handle = lookupNativeHandle(obj);
 		JyWeakReferenceGC headRef = JyWeakReferenceGC.lookupJyGCHead(handle);
@@ -1386,7 +1427,7 @@ public class JyNI {
 	}
 
 	protected static CallableProxyType createCallableProxyFromNative(PyObject referent, long handle, PyObject callback) {
-		System.out.println("createCallableProxyFromNative "+handle);
+		//System.out.println("createCallableProxyFromNative "+handle);
 		if (referent == null)
 			return new CallableProxyType(JyNIEmptyGlobalReference.defaultInstance, callback);
 		ReferenceBackend gref = GlobalRef.newInstance(referent);

@@ -27,6 +27,7 @@
 
 package JyNI;
 
+
 import java.util.HashMap;
 
 import org.python.core.Py;
@@ -125,7 +126,18 @@ public class PyCPeerType extends PyType implements CPeerInterface, FinalizableBu
 	}
 
 	public PyCPeerType(long objectHandle, String name, PyObject dict) {
-		super(fromClass(PyType.class));
+		this(objectHandle, name, dict, fromClass(PyType.class));
+//		super(fromClass(PyType.class));
+//		this.objectHandle = objectHandle;
+//		super.name = name;
+//		//super.setName(name);
+//		if (dict != null) super.dict = dict;
+//		JyNI.CPeerHandles.put(objectHandle, this);
+	}
+
+	public PyCPeerType(long objectHandle, String name, PyObject dict, PyType metatype) {
+		super(metatype);
+		//System.out.println("created PyCPeerType "+name+" withe metatype "+metatype.getName());
 		this.objectHandle = objectHandle;
 		super.name = name;
 		//super.setName(name);
@@ -133,14 +145,32 @@ public class PyCPeerType extends PyType implements CPeerInterface, FinalizableBu
 		JyNI.CPeerHandles.put(objectHandle, this);
 	}
 
+//	public PyType getType() {
+//		//System.out.println("PyCPeerType.getType");
+//		//Todo: Support arbitrary metatypes.
+//		return super.getType();
+//	}
+
+//	public boolean isSubType(PyType supertype) {
+//		System.out.println("PyCPeerType.isSubType");
+//		boolean result = super.isSubType(supertype);
+//		System.out.println(getName()+" subtype of "+supertype.getName()+"? "+result);
+//		return result;
+//	}
+
 	@Override
 	public PyObject __call__(PyObject[] args, String[] keywords) {
-		//System.out.println("CPeerType called: "+this);
+//		System.out.println("CPeerType called: "+this);
+//		if (this.toString().equals("<class 'ctypes.CFunctionType'>"))
+//		{
+//			System.out.println(args[0]);
+//			System.out.println(args[0].getClass());
+//		}
 		//System.out.println("args: "+args);
-		//System.out.println("arg count: "+args.length);
+//		System.out.println("arg count: "+args.length);
 		//if (keywords !=)
-		/*System.out.println("PeerCall kw: "+keywords.length);
-		for(int i = 0; i < keywords.length; ++i)
+		//System.out.println("PeerCall kw: "+keywords.length);
+		/*for(int i = 0; i < keywords.length; ++i)
 			System.out.println(keywords[i]);
 		System.out.println("PeerCall args: "+args.length);
 		for(int i = 0; i < args.length; ++i)
@@ -176,6 +206,10 @@ public class PyCPeerType extends PyType implements CPeerInterface, FinalizableBu
 		//return er;
 	}
 
+//	public void addMethod(PyBuiltinMethod meth) {
+//		System.out.println("PyCPeerType.addMethod: "+meth);
+//	}
+
 //	int findAttrCount = 0;
 //	WeakReference<PyObject> classCache = null;
 	@Override
@@ -191,7 +225,7 @@ public class PyCPeerType extends PyType implements CPeerInterface, FinalizableBu
 //		System.out.println("Result: "+er);
 		er = JyNI.maybeExc(er);
 //		if (name.equals("__class__") && classCache == null) classCache = new WeakReference(er);
-		return er != null ? er : Py.None;
+		return er != null ? er : super.__findattr_ex__(name);
 		//return super.__findattr_ex__(name);
 	}
 
@@ -257,6 +291,23 @@ public class PyCPeerType extends PyType implements CPeerInterface, FinalizableBu
 		return er;
 	}
 
+// It appears number operators work via descriptors on native side, because
+// Jython would not treat PyCPeer class family as builtins. So corresponding
+// magic methods for numbers need not be implemented here. We will add this
+// implementation, if a good reason for this is discovered.
+
+//	@Override
+//	public PyObject __mul__(PyObject other) {
+//        return JyNI.maybeExc(JyNI.JyNI_PyNumber_Multiply(objectHandle, other,
+//        		JyTState.prepareNativeThreadState(Py.getThreadState())));
+//    }
+//
+//	@Override
+//	public PyObject __rmul__(PyObject other) {
+//        return JyNI.maybeExc(JyNI.JyNI_PyNumber_Multiply(objectHandle, other,
+//        		JyTState.prepareNativeThreadState(Py.getThreadState())));
+//    }
+
 	@Override
 	public String toString() {
 		return JyNI.PyObjectAsString(objectHandle,
@@ -268,7 +319,12 @@ public class PyCPeerType extends PyType implements CPeerInterface, FinalizableBu
 		return objectHandle;
 	}
 
-	/**
+	@Override
+	public void __del_builtin__() {
+		if (objectHandle != 0) JyNI.clearPyCPeer(objectHandle, refHandle);
+	}
+
+	/*
 	 * Though it is discouraged, we use finalize to tidy up the
 	 * native references of this peer. We might replace this by
 	 * a better solution in the future.
@@ -278,11 +334,6 @@ public class PyCPeerType extends PyType implements CPeerInterface, FinalizableBu
 	 * From Time to time poll things from the queue and tidy
 	 * up or have a thread permanently waiting on the queue.)
 	 */
-	@Override
-	public void __del_builtin__() {
-		if (objectHandle != 0) JyNI.clearPyCPeer(objectHandle, refHandle);
-	}
-
 //	protected void finalize() throws Throwable {
 //		if (objectHandle != 0) JyNI.clearPyCPeer(objectHandle, refHandle);
 //	}
