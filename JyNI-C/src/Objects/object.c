@@ -297,14 +297,19 @@ inline void _PyObject_InitJy(PyObject *op, TypeMapEntry* tme)
 
 inline PyObject * _JyObject_New(PyTypeObject *tp, TypeMapEntry* tme)
 {
+	jputs(__FUNCTION__);
+	jputs(tp->tp_name);
+	if (tme) jputs(tme->py_type->tp_name);
 	PyObject *op;
 	JyObject *jy;
 	//if (JyNI_IsBuiltinType(tp))
 	if (tme != NULL)
 	{
+		jputsLong(__LINE__);
+		jputsLong(((tme->flags & JY_TRUNCATE_FLAG_MASK) ? sizeof(PyObject)+tme->truncate_trailing : _PyObject_SIZE(tp)));
 		//op = (PyObject *) PyObject_MALLOC(JyObjectBasicSize);
 		//jy = (JyObject*) PyObject_MALLOC(sizeof(JyObject)+((tme->flags & JY_TRUNCATE_FLAG_MASK) ? sizeof(PyObject) : _PyObject_SIZE(tp)) );
-		jy = (JyObject*) PyObject_RawMalloc(sizeof(JyObject)+((tme->flags & JY_TRUNCATE_FLAG_MASK) ? sizeof(PyObject) : _PyObject_SIZE(tp)) );
+		jy = (JyObject*) PyObject_RawMalloc(sizeof(JyObject)+((tme->flags & JY_TRUNCATE_FLAG_MASK) ? sizeof(PyObject)+tme->truncate_trailing : _PyObject_SIZE(tp)) );
 		if (jy == NULL) return PyErr_NoMemory();
 		//jy->jy = (jobject) tme;//tme->jy_class;
 		//jy->flags = tme->flags;
@@ -320,6 +325,8 @@ inline PyObject * _JyObject_New(PyTypeObject *tp, TypeMapEntry* tme)
 		return op;
 	} else
 	{
+		jputsLong(__LINE__);
+		jputsLong(_PyObject_SIZE(tp));
 		//jy = (JyObject *) PyObject_MALLOC(sizeof(JyObject)+_PyObject_SIZE(tp));
 		jy = (JyObject *) PyObject_RawMalloc(sizeof(JyObject)+_PyObject_SIZE(tp));
 		if (jy == NULL) return PyErr_NoMemory();
