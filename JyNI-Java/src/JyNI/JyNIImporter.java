@@ -1,11 +1,13 @@
 /*
  * Copyright of JyNI:
- * Copyright (c) 2013, 2014, 2015 Stefan Richthofer.  All rights reserved.
+ * Copyright (c) 2013, 2014, 2015, 2016 Stefan Richthofer.
+ * All rights reserved.
  *
  *
  * Copyright of Python and Jython:
- * Copyright (c) 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010,
- * 2011, 2012, 2013, 2014, 2015 Python Software Foundation.  All rights reserved.
+ * Copyright (c) 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009,
+ * 2010, 2011, 2012, 2013, 2014, 2015, 2016 Python Software Foundation.
+ * All rights reserved.
  *
  *
  * This file is part of JyNI.
@@ -28,8 +30,12 @@
 package JyNI;
 
 import org.python.core.Py;
+import org.python.core.PyModule;
 import org.python.core.PyObject;
+import org.python.core.PySystemState;
 import org.python.core.Untraversable;
+import org.python.core.imp;
+
 import java.io.File;
 import java.util.Arrays;
 import java.util.Vector;
@@ -50,15 +56,20 @@ public class JyNIImporter extends PyObject {
 		super();
 	}
 	
-	public JyNIImporter(List<String> knownPaths) {
-		super();
-		this.knownPaths = knownPaths;
-	}
-	
-	public JyNIImporter(String... knownPaths) {
-		super();
-		this.knownPaths = Arrays.asList(knownPaths);
-	}
+// Currently not used:
+//	public JyNIImporter(List<String> knownPaths) {
+//		super();
+//		this.knownPaths = knownPaths;
+//		PyModule osModule = (PyModule) imp.importName("os", true);
+//		osModule.__setattr__("name".intern(), new PyOSNameString());
+//	}
+//	
+//	public JyNIImporter(String... knownPaths) {
+//		super();
+//		this.knownPaths = Arrays.asList(knownPaths);
+//		PyModule osModule = (PyModule) imp.importName("os", true);
+//		osModule.__setattr__("name".intern(), new PyOSNameString());
+//	}
 	
 	public PyObject __call__(PyObject args[], String keywords[]) {
 		String s = args[0].toString();
@@ -134,6 +145,19 @@ public class JyNIImporter extends PyObject {
 	}
 
 	public PyObject load_module(String name) {
+		// This stuff should move to JyNIInitializer, but there it currently
+		// breaks sysconfig.py. Will be fixed for Jython 2.7.2.
+		PySystemState sysState = Py.getSystemState();
+		if (!(sysState.getPlatform() instanceof PyShadowString)) {
+			sysState.setPlatform(new PyShadowString(sysState.getPlatform(),
+					JyNI.getNativePlatform()));
+			PyModule osModule = (PyModule) imp.importName("os", true);
+			String _name = osModule.__getattr__("_name".intern()).toString();
+			String nameval = "name".intern();
+			PyObject osname = osModule.__getattr__(nameval);
+			osModule.__setattr__(nameval, new PyShadowString(osname, _name));
+		}
+
 		//ToDo:
 		//Maybe check via 
 		//imp.loadBuiltin and

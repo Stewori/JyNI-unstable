@@ -1,10 +1,13 @@
 /*
- * Copyright of Python and Jython:
- * Copyright (c) 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010,
- * 2011, 2012, 2013, 2014, 2015 Python Software Foundation.  All rights reserved.
- *
  * Copyright of JyNI:
- * Copyright (c) 2013, 2014, 2015 Stefan Richthofer.  All rights reserved.
+ * Copyright (c) 2013, 2014, 2015, 2016 Stefan Richthofer.
+ * All rights reserved.
+ *
+ *
+ * Copyright of Python and Jython:
+ * Copyright (c) 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009,
+ * 2010, 2011, 2012, 2013, 2014, 2015, 2016 Python Software Foundation.
+ * All rights reserved.
  *
  *
  * This file is part of JyNI.
@@ -74,6 +77,8 @@ jobject (*JyNIPyObjectAsPyString)(JNIEnv*, jclass, jlong, jlong);
 jint (*JyNISetAttrString)(JNIEnv*, jclass, jlong, jstring, jobject, jlong);
 jobject (*JyNIlookupFromHandle)(JNIEnv*, jclass, jlong);
 jint (*JyNIcurrentNativeRefCount)(JNIEnv*, jclass, jlong);
+void (*JyNI_nativeIncref)(jlong, jlong);
+void (*JyNI_nativeDecref)(jlong, jlong);
 jstring (*JyNIgetNativeTypeName)(JNIEnv*, jclass, jlong);
 void (*JyNIUnload)(JavaVM*);
 
@@ -185,6 +190,8 @@ JNIEXPORT void JNICALL Java_JyNI_JyNI_initJyNI
 	*(void **) (&JyNISetAttrString) = dlsym(JyNIHandle, "JyNI_setAttrString");
 	*(void **) (&JyNIlookupFromHandle) = dlsym(JyNIHandle, "JyNIlookupFromHandle");
 	*(void **) (&JyNIcurrentNativeRefCount) = dlsym(JyNIHandle, "JyNIcurrentNativeRefCount");
+	*(void **) (&JyNI_nativeIncref) = dlsym(JyNIHandle, "JyNI_nativeIncref");
+	*(void **) (&JyNI_nativeDecref) = dlsym(JyNIHandle, "JyNI_nativeDecref");
 	*(void **) (&JyNIgetNativeTypeName) = dlsym(JyNIHandle, "JyNIgetNativeTypeName");
 	*(void **) (&JyNIUnload) = dlsym(JyNIHandle, "JyNI_unload");
 
@@ -492,7 +499,29 @@ JNIEXPORT jobject JNICALL Java_JyNI_JyNI_lookupFromHandle
 JNIEXPORT jint JNICALL Java_JyNI_JyNI_currentNativeRefCount
 	(JNIEnv *env, jclass class, jlong handle)
 {
-	return JyNIcurrentNativeRefCount(env, class, handle);
+	return (*JyNIcurrentNativeRefCount)(env, class, handle);
+}
+
+/*
+ * Class:     JyNI_JyNI
+ * Method:    nativeIncref
+ * Signature: (JJ)V
+ */
+JNIEXPORT void JNICALL Java_JyNI_JyNI_nativeIncref
+	(JNIEnv *env, jclass class, jlong handle, jlong tstate)
+{
+	(*JyNI_nativeIncref)(handle, tstate);
+}
+
+/*
+ * Class:     JyNI_JyNI
+ * Method:    nativeDecref
+ * Signature: (JJ)V
+ */
+JNIEXPORT void JNICALL Java_JyNI_JyNI_nativeDecref
+	(JNIEnv *env, jclass class, jlong handle, jlong tstate)
+{
+	(*JyNI_nativeDecref)(handle, tstate);
 }
 
 /*
@@ -503,7 +532,7 @@ JNIEXPORT jint JNICALL Java_JyNI_JyNI_currentNativeRefCount
 JNIEXPORT jstring JNICALL Java_JyNI_JyNI_getNativeTypeName
 	(JNIEnv *env, jclass class, jlong handle)
 {
-	return JyNIgetNativeTypeName(env, class, handle);
+	return (*JyNIgetNativeTypeName)(env, class, handle);
 }
 
 /*
@@ -514,7 +543,7 @@ JNIEXPORT jstring JNICALL Java_JyNI_JyNI_getNativeTypeName
 JNIEXPORT void JNICALL Java_JyNI_JyNI_JyGC_1restoreCStubBackend
 	(JNIEnv *env, jclass class, jlong handle, jobject backend, jobject newHead)
 {
-	JyGC_restoreCStubBackend(env, class, handle, backend, newHead);
+	(*JyGC_restoreCStubBackend)(env, class, handle, backend, newHead);
 }
 
 ///*
@@ -532,7 +561,7 @@ JNIEXPORT void JNICALL Java_JyNI_JyNI_JyGC_1restoreCStubBackend
 JNIEXPORT jboolean JNICALL Java_JyNI_JyNI_JyGC_1validateGCHead
 	(JNIEnv *env, jclass class, jlong handle, jlongArray oldLinks)
 {
-	return JyGC_validateGCHead(env, class, handle, oldLinks);
+	return (*JyGC_validateGCHead)(env, class, handle, oldLinks);
 }
 
 /*
@@ -543,7 +572,7 @@ JNIEXPORT jboolean JNICALL Java_JyNI_JyNI_JyGC_1validateGCHead
 JNIEXPORT jlongArray JNICALL Java_JyNI_JyNI_JyGC_1nativeTraverse
 	(JNIEnv *env, jclass class, jlong handle)
 {
-	return JyGC_nativeTraverse(env, class, handle);
+	return (*JyGC_nativeTraverse)(env, class, handle);
 }
 
 /*
@@ -565,7 +594,7 @@ JNIEXPORT void JNICALL Java_JyNI_JyNI_releaseWeakReferent
 JNIEXPORT jobject JNICALL Java_JyNI_JyNI_getItem
 	(JNIEnv *env, jclass class, jlong handle, jobject key, jlong tstate)
 {
-	return JyNI_getItem(env, class, handle, key, tstate);
+	return (*JyNI_getItem)(env, class, handle, key, tstate);
 }
 
 /*
@@ -576,7 +605,7 @@ JNIEXPORT jobject JNICALL Java_JyNI_JyNI_getItem
 JNIEXPORT jint JNICALL Java_JyNI_JyNI_setItem
 	(JNIEnv *env, jclass class, jlong handle, jobject key, jobject value, jlong tstate)
 {
-	return JyNI_setItem(env, class, handle, key, value, tstate);
+	return (*JyNI_setItem)(env, class, handle, key, value, tstate);
 }
 
 /*
@@ -587,7 +616,7 @@ JNIEXPORT jint JNICALL Java_JyNI_JyNI_setItem
 JNIEXPORT jint JNICALL Java_JyNI_JyNI_delItem
 	(JNIEnv *env, jclass class, jlong handle, jobject key, jlong tstate)
 {
-	return JyNI_delItem(env, class, handle, key, tstate);
+	return (*JyNI_delItem)(env, class, handle, key, tstate);
 }
 
 /*
@@ -598,7 +627,7 @@ JNIEXPORT jint JNICALL Java_JyNI_JyNI_delItem
 JNIEXPORT jint JNICALL Java_JyNI_JyNI_PyObjectLength
 	(JNIEnv *env, jclass class, jlong handle, jlong tstate)
 {
-	return JyNI_PyObjectLength(env, class, handle, tstate);
+	return (*JyNI_PyObjectLength)(env, class, handle, tstate);
 }
 
 /*
@@ -609,7 +638,7 @@ JNIEXPORT jint JNICALL Java_JyNI_JyNI_PyObjectLength
 JNIEXPORT jobject JNICALL Java_JyNI_JyNI_descr_1get
   (JNIEnv *env, jclass class, jlong self, jobject obj, jobject type, jlong tstate)
 {
-	return JyNI_descr_get(self, obj, type, tstate);
+	return (*JyNI_descr_get)(self, obj, type, tstate);
 }
 
 /*
@@ -620,7 +649,7 @@ JNIEXPORT jobject JNICALL Java_JyNI_JyNI_descr_1get
 JNIEXPORT jint JNICALL Java_JyNI_JyNI_descr_1set
   (JNIEnv *env, jclass class, jlong self, jobject obj, jobject value, jlong tstate)
 {
-	return JyNI_descr_set(self, obj, value, tstate);
+	return (*JyNI_descr_set)(self, obj, value, tstate);
 }
 
 
@@ -634,7 +663,7 @@ JNIEXPORT jint JNICALL Java_JyNI_JyNI_descr_1set
 JNIEXPORT jobject JNICALL Java_JyNI_JyNI_JyNI_1PyNumber_1Add
   (JNIEnv *env, jclass class, jlong o1, jobject o2, jlong tstate)
 {
-	return JyNI_PyNumber_Add(o1, o2, tstate);
+	return (*JyNI_PyNumber_Add)(o1, o2, tstate);
 }
 
 /*
@@ -645,7 +674,7 @@ JNIEXPORT jobject JNICALL Java_JyNI_JyNI_JyNI_1PyNumber_1Add
 JNIEXPORT jobject JNICALL Java_JyNI_JyNI_JyNI_1PyNumber_1Subtract
   (JNIEnv *env, jclass class, jlong o1, jobject o2, jlong tstate)
 {
-	return JyNI_PyNumber_Subtract(o1, o2, tstate);
+	return (*JyNI_PyNumber_Subtract)(o1, o2, tstate);
 }
 
 /*
@@ -656,7 +685,7 @@ JNIEXPORT jobject JNICALL Java_JyNI_JyNI_JyNI_1PyNumber_1Subtract
 JNIEXPORT jobject JNICALL Java_JyNI_JyNI_JyNI_1PyNumber_1Multiply
   (JNIEnv *env, jclass class, jlong o1, jobject o2, jlong tstate)
 {
-	return JyNI_PyNumber_Multiply(o1, o2, tstate);
+	return (*JyNI_PyNumber_Multiply)(o1, o2, tstate);
 }
 
 /*
@@ -667,7 +696,7 @@ JNIEXPORT jobject JNICALL Java_JyNI_JyNI_JyNI_1PyNumber_1Multiply
 JNIEXPORT jobject JNICALL Java_JyNI_JyNI_JyNI_1PyNumber_1Divide
   (JNIEnv *env, jclass class, jlong o1, jobject o2, jlong tstate)
 {
-	return JyNI_PyNumber_Divide(o1, o2, tstate);
+	return (*JyNI_PyNumber_Divide)(o1, o2, tstate);
 }
 
 /*
@@ -678,7 +707,7 @@ JNIEXPORT jobject JNICALL Java_JyNI_JyNI_JyNI_1PyNumber_1Divide
 JNIEXPORT jobject JNICALL Java_JyNI_JyNI_JyNI_1PyNumber_1FloorDivide
   (JNIEnv *env, jclass class, jlong o1, jobject o2, jlong tstate)
 {
-	return JyNI_PyNumber_FloorDivide(o1, o2, tstate);
+	return (*JyNI_PyNumber_FloorDivide)(o1, o2, tstate);
 }
 
 /*
@@ -689,7 +718,7 @@ JNIEXPORT jobject JNICALL Java_JyNI_JyNI_JyNI_1PyNumber_1FloorDivide
 JNIEXPORT jobject JNICALL Java_JyNI_JyNI_JyNI_1PyNumber_1TrueDivide
   (JNIEnv *env, jclass class, jlong o1, jobject o2, jlong tstate)
 {
-	return JyNI_PyNumber_TrueDivide(o1, o2, tstate);
+	return (*JyNI_PyNumber_TrueDivide)(o1, o2, tstate);
 }
 
 /*
@@ -700,7 +729,7 @@ JNIEXPORT jobject JNICALL Java_JyNI_JyNI_JyNI_1PyNumber_1TrueDivide
 JNIEXPORT jobject JNICALL Java_JyNI_JyNI_JyNI_1PyNumber_1Remainder
   (JNIEnv *env, jclass class, jlong o1, jobject o2, jlong tstate)
 {
-	return JyNI_PyNumber_Remainder(o1, o2, tstate);
+	return (*JyNI_PyNumber_Remainder)(o1, o2, tstate);
 }
 
 /*
@@ -711,7 +740,7 @@ JNIEXPORT jobject JNICALL Java_JyNI_JyNI_JyNI_1PyNumber_1Remainder
 JNIEXPORT jobject JNICALL Java_JyNI_JyNI_JyNI_1PyNumber_1Divmod
   (JNIEnv *env, jclass class, jlong o1, jobject o2, jlong tstate)
 {
-	return JyNI_PyNumber_Divmod(o1, o2, tstate);
+	return (*JyNI_PyNumber_Divmod)(o1, o2, tstate);
 }
 
 /*
@@ -722,7 +751,7 @@ JNIEXPORT jobject JNICALL Java_JyNI_JyNI_JyNI_1PyNumber_1Divmod
 JNIEXPORT jobject JNICALL Java_JyNI_JyNI_JyNI_1PyNumber_1Power
   (JNIEnv *env, jclass class, jlong o1, jobject o2, jobject o3, jlong tstate)
 {
-	return JyNI_PyNumber_Power(o1, o2, o3, tstate);
+	return (*JyNI_PyNumber_Power)(o1, o2, o3, tstate);
 }
 
 /*
@@ -733,7 +762,7 @@ JNIEXPORT jobject JNICALL Java_JyNI_JyNI_JyNI_1PyNumber_1Power
 JNIEXPORT jobject JNICALL Java_JyNI_JyNI_JyNI_1PyNumber_1Negative
   (JNIEnv *env, jclass class, jlong o, jlong tstate)
 {
-	return JyNI_PyNumber_Negative(o, tstate);
+	return (*JyNI_PyNumber_Negative)(o, tstate);
 }
 
 /*
@@ -744,7 +773,7 @@ JNIEXPORT jobject JNICALL Java_JyNI_JyNI_JyNI_1PyNumber_1Negative
 JNIEXPORT jobject JNICALL Java_JyNI_JyNI_JyNI_1PyNumber_1Positive
   (JNIEnv *env, jclass class, jlong o, jlong tstate)
 {
-	return JyNI_PyNumber_Positive(o, tstate);
+	return (*JyNI_PyNumber_Positive)(o, tstate);
 }
 
 /*
@@ -755,7 +784,7 @@ JNIEXPORT jobject JNICALL Java_JyNI_JyNI_JyNI_1PyNumber_1Positive
 JNIEXPORT jobject JNICALL Java_JyNI_JyNI_JyNI_1PyNumber_1Absolute
   (JNIEnv *env, jclass class, jlong o, jlong tstate)
 {
-	return JyNI_PyNumber_Absolute(o, tstate);
+	return (*JyNI_PyNumber_Absolute)(o, tstate);
 }
 
 /*
@@ -766,7 +795,7 @@ JNIEXPORT jobject JNICALL Java_JyNI_JyNI_JyNI_1PyNumber_1Absolute
 JNIEXPORT jobject JNICALL Java_JyNI_JyNI_JyNI_1PyNumber_1Invert
   (JNIEnv *env, jclass class, jlong o, jlong tstate)
 {
-	return JyNI_PyNumber_Invert(o, tstate);
+	return (*JyNI_PyNumber_Invert)(o, tstate);
 }
 
 /*
@@ -777,7 +806,7 @@ JNIEXPORT jobject JNICALL Java_JyNI_JyNI_JyNI_1PyNumber_1Invert
 JNIEXPORT jobject JNICALL Java_JyNI_JyNI_JyNI_1PyNumber_1Lshift
   (JNIEnv *env, jclass class, jlong o1, jobject o2, jlong tstate)
 {
-	return JyNI_PyNumber_Lshift(o1, o2, tstate);
+	return (*JyNI_PyNumber_Lshift)(o1, o2, tstate);
 }
 
 /*
@@ -788,7 +817,7 @@ JNIEXPORT jobject JNICALL Java_JyNI_JyNI_JyNI_1PyNumber_1Lshift
 JNIEXPORT jobject JNICALL Java_JyNI_JyNI_JyNI_1PyNumber_1Rshift
   (JNIEnv *env, jclass class, jlong o1, jobject o2, jlong tstate)
 {
-	return JyNI_PyNumber_Rshift(o1, o2, tstate);
+	return (*JyNI_PyNumber_Rshift)(o1, o2, tstate);
 }
 
 /*
@@ -799,7 +828,7 @@ JNIEXPORT jobject JNICALL Java_JyNI_JyNI_JyNI_1PyNumber_1Rshift
 JNIEXPORT jobject JNICALL Java_JyNI_JyNI_JyNI_1PyNumber_1And
   (JNIEnv *env, jclass class, jlong o1, jobject o2, jlong tstate)
 {
-	return JyNI_PyNumber_And(o1, o2, tstate);
+	return (*JyNI_PyNumber_And)(o1, o2, tstate);
 }
 
 /*
@@ -810,7 +839,7 @@ JNIEXPORT jobject JNICALL Java_JyNI_JyNI_JyNI_1PyNumber_1And
 JNIEXPORT jobject JNICALL Java_JyNI_JyNI_JyNI_1PyNumber_1Xor
   (JNIEnv *env, jclass class, jlong o1, jobject o2, jlong tstate)
 {
-	return JyNI_PyNumber_Xor(o1, o2, tstate);
+	return (*JyNI_PyNumber_Xor)(o1, o2, tstate);
 }
 
 /*
@@ -821,5 +850,5 @@ JNIEXPORT jobject JNICALL Java_JyNI_JyNI_JyNI_1PyNumber_1Xor
 JNIEXPORT jobject JNICALL Java_JyNI_JyNI_JyNI_1PyNumber_1Or
   (JNIEnv *env, jclass class, jlong o1, jobject o2, jlong tstate)
 {
-	return JyNI_PyNumber_Or(o1, o2, tstate);
+	return (*JyNI_PyNumber_Or)(o1, o2, tstate);
 }

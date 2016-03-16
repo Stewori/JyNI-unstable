@@ -1,11 +1,13 @@
 /*
  * Copyright of JyNI:
- * Copyright (c) 2013, 2014, 2015 Stefan Richthofer.  All rights reserved.
+ * Copyright (c) 2013, 2014, 2015, 2016 Stefan Richthofer.
+ * All rights reserved.
  *
  *
  * Copyright of Python and Jython:
- * Copyright (c) 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010,
- * 2011, 2012, 2013, 2014, 2015 Python Software Foundation.  All rights reserved.
+ * Copyright (c) 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009,
+ * 2010, 2011, 2012, 2013, 2014, 2015, 2016 Python Software Foundation.
+ * All rights reserved.
  *
  *
  * This file is part of JyNI.
@@ -212,6 +214,8 @@ public class JyNI {
 	public static native PyString PyObjectAsPyString(long peerHandle, long tstate);
 	public static native PyObject lookupFromHandle(long handle);
 	public static native int currentNativeRefCount(long handle);
+	public static native void nativeIncref(long handle, long tstate);
+	public static native void nativeDecref(long handle, long tstate);
 	public static native String getNativeTypeName(long handle);
 	public static native PyObject getItem(long peerHandle, PyObject key, long tstate);
 	public static native int setItem(long peerHandle, PyObject key, PyObject value, long tstate);
@@ -310,7 +314,7 @@ public class JyNI {
 		//todo: Check, whether this does what it is supposed to
 		//System.out.println("JyNI: Getting Object by name: "+name);
 		PySystemState sysState = Py.getSystemState();
-		return Py.getThreadState().systemState.__dict__.__getitem__(new PyString(name))._doget(sysState);
+		return Py.getThreadState().getSystemState().__dict__.__getitem__(new PyString(name))._doget(sysState);
 		//PyObject er = Py.getThreadState().systemState.__dict__.__getitem__(new PyString(name));
 		/*PyObject er = sysState.__dict__.__finditem__(name);
 		System.out.println("found: "+er.getClass().getName());
@@ -352,7 +356,7 @@ public class JyNI {
 	public static int getDLOpenFlags()
 	{
 		try {
-			return ((PyInteger) Py.getThreadState().systemState.__getattr__("dlopenflags")).asInt();
+			return ((PyInteger) Py.getThreadState().getSystemState().__getattr__("dlopenflags")).asInt();
 		} catch (Exception e1)
 		{
 			try {
@@ -363,11 +367,11 @@ public class JyNI {
 			}
 		}
 	}
-		
+
 	public static void setDLOpenFlags(int n)
 	{
 		try {
-			Py.getThreadState().systemState.__setattr__("dlopenflags", new PyInteger(n));
+			Py.getThreadState().getSystemState().__setattr__("dlopenflags", new PyInteger(n));
 		} catch (Exception e1)
 		{
 			try {
@@ -510,12 +514,17 @@ public class JyNI {
 		if (er != null && er.getType().isSubType(PyModule.TYPE)) return er;
 		else
 		{
-			er = new PyModule(nm);
+//			try {
+			er = new PyModule(nm, new PyNativeRefHoldingStringMap());
 			//pss.modules.__setattr__(nm, er);
 			pss.modules.__setitem__(name, er);
 			//System.out.println("JYNY rr: "+er);
 			//System.out.println(er.getType().getName());
 			//ERRR
+//			} catch (Exception e) {
+//				System.err.println("Errrrr: "+e);
+//				e.printStackTrace(System.err);
+//			}
 			return er;
 		}
 	}
@@ -839,11 +848,11 @@ public class JyNI {
 
 	//--------------errors-section-----------------
 	public static PyObject exceptionByName(String name) {
-//		System.out.println("look for exception: "+name);
+		//System.out.println("look for exception: "+name);
 		String rawName = name;
 		int pin = name.indexOf('.');
 		if (pin != -1) rawName = rawName.substring(pin+1);
-//		System.out.println("rawName: "+rawName);
+		//System.out.println("rawName: "+rawName);
 		try {
 			Field exc = Py.class.getField(rawName);
 			PyObject er = (PyObject) exc.get(null);
@@ -853,8 +862,8 @@ public class JyNI {
 		} catch (NoSuchFieldException nsfe) {
 			return null;
 		} catch (Exception e) {
-			System.err.println("JyNI-Warning: Could not obtain Exception: "+name);
-			System.err.println("  Reason: "+e);
+//			System.err.println("JyNI-Warning: Could not obtain Exception: "+name);
+//			System.err.println("  Reason: "+e);
 			return null;
 		}
 	}
@@ -895,6 +904,8 @@ public class JyNI {
 	}
 
 	public static void JyErr_InsertCurExc(ThreadState tstate, PyObject type, PyObject value, PyTraceback traceback) {
+//		System.out.println("JyErr_InsertCurExc");
+//		System.out.println(value);
 		if (type == null) type = Py.None;
 		if (value == null) value = Py.None;
 		ThreadState tstate0 = tstate == null ? Py.getThreadState() : tstate;
@@ -906,6 +917,9 @@ public class JyNI {
 //		}
 		//System.out.println("JyErr_InsertCurExc 3");
 	}
+
+	/*
+	These simplified versions are currently not used.
 
 	public static void JyErr_InsertCurExc(ThreadState tstate, PyObject type, PyObject value) {
 		if (type == null) type = Py.None;
@@ -923,7 +937,7 @@ public class JyNI {
 	public static void JyErr_InsertCurExc(ThreadState tstate) {
 		ThreadState tstate0 = tstate == null ? Py.getThreadState() : tstate;
 		tstate0.exception = new PyException();
-	}
+	}*/
 
 	public static void JyErr_PrintEx(boolean set_sys_last_vars, ThreadState tstate, PyObject type, PyObject value, PyTraceback traceback) {
 		ThreadState tstate0 = tstate == null ? Py.getThreadState() : tstate;
@@ -1125,6 +1139,52 @@ public class JyNI {
 
 	public static boolean isPosix() {
 		return FileSystems.getDefault().supportedFileAttributeViews().contains("posix");
+	}
+
+	/**
+	 * Emulates CPython's way to name sys.platform.
+	 */
+	public static String getNativePlatform() {
+		/* Works according to this table:
+
+		.---------------------.--------.
+		| System              | Value  |
+		|---------------------|--------|
+		| Linux (2.x and 3.x) | linux2 |
+		| Windows             | win32  |
+		| Windows/Cygwin      | cygwin |
+		| Mac OS X            | darwin |
+		| OS/2                | os2    |
+		| OS/2 EMX            | os2emx |
+		| RiscOS              | riscos |
+		| AtheOS              | atheos |
+		'---------------------'--------'
+		*/
+		String osname = System.getProperty("os.name");
+		if (osname.equals("Linux")) return "linux2";
+		if (osname.equals("Mac OS X")) return "darwin";
+		// Not considering cygwin for now...
+		if (osname.startsWith("Windows")) return "win32";
+		return osname.replaceAll("[\\s/]", "").toLowerCase();
+	}
+
+	public static boolean isLibraryFileAvailable(String libname) {
+		if (JyNIInitializer.importer == null) return false;
+		String suf = "."+JyNIImporter.getSystemDependendDynamicLibraryExtension();
+		for (String s : JyNIInitializer.importer.libPaths)
+		{
+			File fl = new File(s);
+			String[] ch = fl.list();
+			if (ch != null)
+			{
+				for (String m : ch)
+				{
+					if (m.startsWith(libname+".") && m.endsWith(suf))
+						return true;
+				}
+			}
+		}
+		return false;
 	}
 
 	public static void jPrint(String msg) {

@@ -1,10 +1,13 @@
 /*
- * Copyright of Python and Jython:
- * Copyright (c) 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010,
- * 2011, 2012, 2013, 2014, 2015 Python Software Foundation.  All rights reserved.
- *
  * Copyright of JyNI:
- * Copyright (c) 2013, 2014, 2015 Stefan Richthofer.  All rights reserved.
+ * Copyright (c) 2013, 2014, 2015, 2016 Stefan Richthofer.
+ * All rights reserved.
+ *
+ *
+ * Copyright of Python and Jython:
+ * Copyright (c) 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009,
+ * 2010, 2011, 2012, 2013, 2014, 2015, 2016 Python Software Foundation.
+ * All rights reserved.
  *
  *
  * This file is part of JyNI.
@@ -60,7 +63,7 @@ PyObject* JySync_Init_PyTuple_From_JyTuple(jobject src)
 	jint srcSize = (*env)->CallIntMethod(env, src, pyTupleSize);
 	//jputs("### creating tuple...");
 	PyObject* er = PyTuple_New(srcSize);
-	(*env)->CallStaticObjectMethod(env, JyNIClass, JyNISetNativeHandle, src, (jlong) er, JNI_FALSE);
+	(*env)->CallStaticObjectMethod(env, JyNIClass, JyNISetNativeHandle, src, (jlong) er);//, JNI_FALSE);
 	AS_JY_WITH_GC(er)->flags |= JY_HAS_JHANDLE_FLAG_MASK;
 	//jputs("### created tuple...");
 	//Py_XINCREF(er);
@@ -439,7 +442,7 @@ PyObject* JySync_Init_PyList_From_JyList(jobject src)
 	jarray handles = (*env)->CallStaticObjectMethod(env, JyNIClass, JyNILookupNativeHandles, src);
 	jsize size = (*env)->GetArrayLength(env, handles);
 	PyObject* op = PyList_New((Py_ssize_t) size);
-	(*env)->CallStaticObjectMethod(env, JyNIClass, JyNISetNativeHandle, src, (jlong) op, JNI_FALSE);
+	(*env)->CallStaticObjectMethod(env, JyNIClass, JyNISetNativeHandle, src, (jlong) op);//, JNI_FALSE);
 	AS_JY_WITH_GC(op)->flags |= JY_HAS_JHANDLE_FLAG_MASK;
 	jsize i;
 	PyObject* v;
@@ -490,12 +493,14 @@ PyObject* JySync_Init_PySet_From_JySet(jobject src) //needed because truncation 
 {
 	PySetObject* so = (PySetObject *) PySet_Type.tp_alloc(&PySet_Type, 0);
 	JyObject* jy = AS_JY(so);
-	jy->jy = src;
-	jy->flags |= JY_INITIALIZED_FLAG_MASK;
+//	jy->jy = src;
+//	jy->flags |= JY_INITIALIZED_FLAG_MASK;
 	env(NULL);
 	so->used = (*env)->CallIntMethod(env, src, pyBaseSetSize);
-	jobject jySet = (*env)->NewObject(env, JySetClass, JySetFromBackendHandleConstructor, (jlong) so);
-	(*env)->CallVoidMethod(env, jySet, JySetInstallToPySet, src); //maybe do this direct to have lesser security manager issues
+	jobject _set = (*env)->GetObjectField(env, src, pyBaseSet_set);
+	jobject jySet = (*env)->NewObject(env, JySetClass, JySetFromBackendHandleConstructor, _set, (jlong) so);
+//	(*env)->CallVoidMethod(env, jySet, JySetInstallToPySet, src);
+	(*env)->SetObjectField(env, src, pyBaseSet_set, jySet);
 	return (PyObject*) so;
 }
 
@@ -508,12 +513,14 @@ PyObject* JySync_Init_PyFrozenSet_From_JyFrozenSet(jobject src) //needed because
 {
 	PySetObject* so = (PySetObject *) PyFrozenSet_Type.tp_alloc(&PyFrozenSet_Type, 0);
 	JyObject* jy = AS_JY(so);
-	jy->jy = src;
-	jy->flags |= JY_INITIALIZED_FLAG_MASK;
+//	jy->jy = src;
+//	jy->flags |= JY_INITIALIZED_FLAG_MASK;
 	env(NULL);
 	so->used = (*env)->CallIntMethod(env, src, pyBaseSetSize);
-	jobject jySet = (*env)->NewObject(env, JySetClass, JySetFromBackendHandleConstructor, (jlong) so);
-	(*env)->CallVoidMethod(env, jySet, JySetInstallToPySet, src); //maybe do this direct to have lesser security manager issues
+	jobject _set = (*env)->GetObjectField(env, src, pyBaseSet_set);
+	jobject jySet = (*env)->NewObject(env, JySetClass, JySetFromBackendHandleConstructor, _set, (jlong) so);
+//	(*env)->CallVoidMethod(env, jySet, JySetInstallToPySet, src);
+	(*env)->SetObjectField(env, src, pyBaseSet_set, jySet);
 	return (PyObject*) so;
 }
 
@@ -612,6 +619,84 @@ PyObject* JySync_Init_PyMethod_From_JyMethod(jobject src)
 		JyNI_PyObject_FromJythonPyObject((*env)->GetObjectField(env, src, pyMethod__func__)),
 		JyNI_PyObject_FromJythonPyObject((*env)->GetObjectField(env, src, pyMethod__self__)),
 		JyNI_PyObject_FromJythonPyObject((*env)->GetObjectField(env, src, pyMethodImClass)));
+}
+
+jobject JySync_Init_JyClassMethod_From_PyClassMethod(PyObject* src, jclass subtype)
+{
+	env(NULL);
+	return (*env)->NewObject(env, pyClassMethodClass, pyClassMethodConstructor,
+		JyNI_JythonPyObject_FromPyObject(((classmethod*) src)->cm_callable));
+}
+
+PyObject* JySync_Init_PyClassMethod_From_JyClassMethod(jobject src)
+{
+	env(NULL);
+	return PyClassMethod_New(JyNI_PyObject_FromJythonPyObject((*env)->GetObjectField(env,
+		src, pyClassMethod_callable)));
+}
+
+jobject JySync_Init_JyStaticMethod_From_PyStaticMethod(PyObject* src, jclass subtype)
+{
+	env(NULL);
+	return (*env)->NewObject(env, pyStaticMethodClass, pyStaticMethodConstructor,
+		JyNI_JythonPyObject_FromPyObject(((staticmethod*) src)->sm_callable));
+}
+
+PyObject* JySync_Init_PyStaticMethod_From_JyStaticMethod(jobject src)
+{
+	env(NULL);
+	return PyStaticMethod_New(JyNI_PyObject_FromJythonPyObject((*env)->GetObjectField(env,
+		src, pyStaticMethod_callable)));
+}
+
+jobject JySync_Init_JyDictProxy_From_PyDictProxy(PyObject* src, jclass subtype)
+{
+	env(NULL);
+	return (*env)->NewObject(env, pyDictProxyClass, pyDictProxyConstructor,
+		JyNI_JythonPyObject_FromPyObject(((proxyobject*) src)->dict));
+}
+
+PyObject* JySync_Init_PyDictProxy_From_JyDictProxy(jobject src)
+{
+	env(NULL);
+	return PyDictProxy_New(JyNI_PyObject_FromJythonPyObject((*env)->GetObjectField(env,
+		src, pyDictProxy_dict)));
+}
+
+jobject JySync_Init_JyProperty_From_PyProperty(PyObject* src, jclass subtype)
+{
+	env(NULL);
+	jobject result = (*env)->NewObject(env, pyPropertyClass, pyPropertyConstructor);
+	(*env)->SetObjectField(env, result, pyProperty_fget,
+		JyNI_JythonPyObject_FromPyObject(((propertyobject*) src)->prop_get));
+	(*env)->SetObjectField(env, result, pyProperty_fset,
+			JyNI_JythonPyObject_FromPyObject(((propertyobject*) src)->prop_set));
+	(*env)->SetObjectField(env, result, pyProperty_fdel,
+			JyNI_JythonPyObject_FromPyObject(((propertyobject*) src)->prop_del));
+	(*env)->SetObjectField(env, result, pyProperty_doc,
+			JyNI_JythonPyObject_FromPyObject(((propertyobject*) src)->prop_doc));
+	(*env)->SetBooleanField(env, result, pyProperty_docFromGetter,
+			JyNI_JythonPyObject_FromPyObject(((propertyobject*) src)->getter_doc));
+	return result;
+}
+
+PyObject* JySync_Init_PyProperty_From_JyProperty(jobject src)
+{
+	env(NULL);
+	propertyobject* result = PyObject_GC_New(propertyobject, &PyProperty_Type);
+	if (result != NULL) {
+		result->prop_get = JyNI_PyObject_FromJythonPyObject(
+				(*env)->GetObjectField(env, src, pyProperty_fget));
+		result->prop_set = JyNI_PyObject_FromJythonPyObject(
+				(*env)->GetObjectField(env, src, pyProperty_fset));
+		result->prop_del = JyNI_PyObject_FromJythonPyObject(
+				(*env)->GetObjectField(env, src, pyProperty_fdel));
+		result->prop_doc = JyNI_PyObject_FromJythonPyObject(
+				(*env)->GetObjectField(env, src, pyProperty_doc));
+		result->getter_doc = (*env)->GetBooleanField(env, src, pyProperty_docFromGetter);
+		_JyNI_GC_TRACK(result);
+	}
+	return (PyObject *) result;
 }
 
 #define PyWeakref_GET_OBJECT0(ref)                          \

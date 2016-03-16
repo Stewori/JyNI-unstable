@@ -1,12 +1,16 @@
 /* This File is based on errors.c from CPython 2.7.3 release.
  * It has been modified to suit JyNI needs.
  *
- * Copyright of the original file:
- * Copyright (c) 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010,
- * 2011, 2012, 2013, 2014, 2015 Python Software Foundation.  All rights reserved.
  *
  * Copyright of JyNI:
- * Copyright (c) 2013, 2014, 2015 Stefan Richthofer.  All rights reserved.
+ * Copyright (c) 2013, 2014, 2015, 2016 Stefan Richthofer.
+ * All rights reserved.
+ *
+ *
+ * Copyright of Python and Jython:
+ * Copyright (c) 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009,
+ * 2010, 2011, 2012, 2013, 2014, 2015, 2016 Python Software Foundation.
+ * All rights reserved.
  *
  *
  * This file is part of JyNI.
@@ -65,7 +69,7 @@ extern "C" {
 void
 PyErr_Restore(PyObject *type, PyObject *value, PyObject *traceback)
 {
-	//puts("PyErr_Restore");
+//	puts(__FUNCTION__);
 	if (traceback != NULL && !PyTraceBack_Check(traceback)) {
 		/* XXX Should never happen -- fatal error instead? */
 		/* Well, it could be None. */
@@ -112,6 +116,9 @@ PyErr_Restore(PyObject *type, PyObject *value, PyObject *traceback)
 	tstate->curexc_type = type;
 	tstate->curexc_value = value;
 	tstate->curexc_traceback = traceback;
+//	printf("%d\n", __LINE__);
+//	if (value && PyString_Check(value))
+//		puts(PyString_AS_STRING(value));
 
 	Py_XDECREF(oldtype);
 	Py_XDECREF(oldvalue);
@@ -121,6 +128,7 @@ PyErr_Restore(PyObject *type, PyObject *value, PyObject *traceback)
 void
 PyErr_SetObject(PyObject *exception, PyObject *value)
 {
+//	puts(__FUNCTION__);
 	Py_XINCREF(exception);
 	Py_XINCREF(value);
 	PyErr_Restore(exception, value, (PyObject *)NULL);
@@ -235,16 +243,26 @@ PyErr_ExceptionMatches(PyObject *exc)
 void
 PyErr_NormalizeException(PyObject **exc, PyObject **val, PyObject **tb)
 {
+//	jputs(__FUNCTION__);
 	if (*exc == NULL) {
 		/* There was no exception, so nothing to do. */
 		return;
 	}
+
 	env();
 	jobject pyExc = (*env)->NewObject(env, pyExceptionClass, pyExceptionFullConstructor,
 		JyNI_JythonPyObject_FromPyObject(*exc),
 		JyNI_JythonPyObject_FromPyObject(*val),
 		JyNI_JythonPyObject_FromPyObject(*tb));
+//	if (!(*exc)->ob_type) {
+//		puts("exc ob_type is still null");
+//	} else
+//		puts((*exc)->ob_type->tp_name);
+//	jputs("old val:");
+//	if (*val && PyString_CheckExact(*val)) jputs(PyString_AS_STRING(*val));
+//	else jputs("val null");
 	(*env)->CallVoidMethod(env, pyExc, pyExceptionNormalize);
+
 	*exc = JyNI_PyObject_FromJythonPyObject((*env)->GetObjectField(env, pyExc, pyExceptionTypeField));
 	*val = JyNI_PyObject_FromJythonPyObject((*env)->GetObjectField(env, pyExc, pyExceptionValueField));
 	*tb = JyNI_PyObject_FromJythonPyObject((*env)->GetObjectField(env, pyExc, pyExceptionTracebackField));
@@ -667,8 +685,7 @@ PyErr_BadInternalCall(void)
 PyObject *
 PyErr_Format(PyObject *exception, const char *format, ...)
 {
-//	puts("PyErr_Format");
-//	puts(format);
+	//puts(__FUNCTION__);
 	va_list vargs;
 	PyObject* string;
 
@@ -679,7 +696,7 @@ PyErr_Format(PyObject *exception, const char *format, ...)
 #endif
 
 	string = PyString_FromFormatV(format, vargs);
-//	puts(PyString_AS_STRING(string));
+	//puts(PyString_AS_STRING(string));
 	PyErr_SetObject(exception, string);
 	Py_XDECREF(string);
 	va_end(vargs);
@@ -762,13 +779,20 @@ PyErr_NewException(char *name, PyObject *base, PyObject *dict)
 		(*env)->NewStringUTF(env, name), jbases, JyNI_JythonPyObject_FromPyObject(dict));
 	if ((*env)->ExceptionCheck(env))
 	{
-		jputs("Exception on makeClass call:");
+//		jputs("Exception on makeClass call:");
 		jobject exc = (*env)->ExceptionOccurred(env);
-		JyNI_jprintJ(exc);
+//		JyNI_jprintJ(exc);
 		(*env)->ExceptionClear(env);
 	}
+//	jputs(__FUNCTION__);
+//	jputs(name);
+//	JyNI_jprintJ(jres);
+//	JyNI_printJInfo(jres);
 	//result = PyObject_CallFunction((PyObject *)&PyType_Type, "sOO", dot+1, bases, dict);
 	result = JyNI_PyObject_FromJythonPyObject(jres);
+//	jputs("New exception created:");
+//	jputs(name);
+//	jputsLong(PyType_HasFeature(((PyTypeObject*) result)->ob_type, Py_TPFLAGS_HEAPTYPE));
 //	jputs("control name");
 //	jputs(((PyTypeObject*) result)->tp_name);
 

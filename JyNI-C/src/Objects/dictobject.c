@@ -1,12 +1,16 @@
 /* This File is based on dictobject.c from CPython 2.7.3 release.
  * It has been modified to suit JyNI needs.
  *
- * Copyright of the original file:
- * Copyright (c) 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010,
- * 2011, 2012, 2013, 2014, 2015 Python Software Foundation.  All rights reserved.
  *
  * Copyright of JyNI:
- * Copyright (c) 2013, 2014, 2015 Stefan Richthofer.  All rights reserved.
+ * Copyright (c) 2013, 2014, 2015, 2016 Stefan Richthofer.
+ * All rights reserved.
+ *
+ *
+ * Copyright of Python and Jython:
+ * Copyright (c) 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009,
+ * 2010, 2011, 2012, 2013, 2014, 2015, 2016 Python Software Foundation.
+ * All rights reserved.
  *
  *
  * This file is part of JyNI.
@@ -734,6 +738,8 @@ PyDict_New(void)
 PyObject *
 PyDict_GetItem(PyObject *op, PyObject *key)
 {
+//	int dbg = strcmp(PyString_AS_STRING(key), "asArray") == 0;
+//	if (dbg) puts(__FUNCTION__);
 	if (!PyDict_Check(op)) return NULL;
 	env(NULL);
 //	if ((*env)->ExceptionCheck(env)) {
@@ -741,13 +747,17 @@ PyDict_GetItem(PyObject *op, PyObject *key)
 //	}
 	jobject jop = JyNI_JythonPyObject_FromPyObject(op);
 	ENTER_SubtypeLoop_Safe_ModePy(jop, op, __finditem__)
-	PyObject* result = JyNI_PyObject_FromJythonPyObject(
-				(*env)->CallObjectMethod(env, jop, JMID(__finditem__),
-					JyNI_JythonPyObject_FromPyObject(key)
-				)
-			);
+//	if (dbg) printf("%i\n", jmid__finditem__ == pyObject__finditem__);
+	jobject jres = (*env)->CallObjectMethod(env, jop, JMID(__finditem__),
+			JyNI_JythonPyObject_FromPyObject(key));
+	PyObject* result = JyNI_PyObject_FromJythonPyObject(jres);
 	LEAVE_SubtypeLoop_Safe_ModePy(jop, __finditem__)
+//	if (dbg) printf("%i\n", __LINE__);
+//	if (dbg) printf("%i\n", result);
+//	if (dbg) printf("%i\n", jres == JyNone);
+//	if (dbg) printf("%i\n", (*env)->IsSameObject(env, jres, NULL));
 	if((*env)->ExceptionCheck(env)) {
+//		if (dbg) printf("%i\n", __LINE__);
 		(*env)->ExceptionClear(env);
 		return NULL;
 	}
@@ -1230,10 +1240,27 @@ dict_dealloc(register PyDictObject *mp)
 //	Py_ReprLeave((PyObject*)mp);
 //	return 0;
 //}
-//
-//static PyObject *
-//dict_repr(PyDictObject *mp)
-//{
+
+static PyObject *
+dict_repr(PyDictObject *mp)
+{
+//	jputs(__FUNCTION__);
+//	jputs(Py_TYPE(mp)->tp_name);
+	//PyString_FromString("{..dict_repr.}");
+	env(NULL);
+	jobject jop = JyNI_JythonPyObject_FromPyObject(mp);
+//	JyNI_printJInfo(jop);
+
+	ENTER_SubtypeLoop_Safe_ModePy(jop, mp, __repr__)
+	PyObject* result = JyNI_PyObject_FromJythonPyObject(
+			(*env)->CallObjectMethod(env, jop, JMID(__repr__)));
+	LEAVE_SubtypeLoop_Safe_ModePy(jop, __repr__)
+
+	if((*env)->ExceptionCheck(env)) {
+		(*env)->ExceptionClear(env);
+		return NULL;
+	}
+	return result;
 //	Py_ssize_t i;
 //	PyObject *s, *temp, *colon = NULL;
 //	PyObject *pieces = NULL, *result = NULL;
@@ -1308,8 +1335,8 @@ dict_dealloc(register PyDictObject *mp)
 //	Py_XDECREF(colon);
 //	Py_ReprLeave((PyObject *)mp);
 //	return result;
-//}
-//
+}
+
 //static Py_ssize_t
 //dict_length(PyDictObject *mp)
 //{
@@ -2595,7 +2622,7 @@ PyTypeObject PyDict_Type = {
 	0,                                          /* tp_getattr */
 	0,                                          /* tp_setattr */
 	0,//(cmpfunc)dict_compare,                  /* tp_compare */
-	0,//(reprfunc)dict_repr,                    /* tp_repr */
+	(reprfunc)dict_repr,                        /* tp_repr */
 	0,                                          /* tp_as_number */
 	0,//&dict_as_sequence,                      /* tp_as_sequence */
 	0,//&dict_as_mapping,                       /* tp_as_mapping */
@@ -2656,8 +2683,8 @@ PyDict_GetItemString(PyObject *v, const char *key)
 {
 //	jputs("PyDict_GetItemString:");
 //	jputs(key);
-	if (!v) jputs("dict is NULL");
-	if (!v->ob_type) jputs("type of dict is NULL");
+//	if (!v) jputs("dict is NULL");
+//	if (!v->ob_type) jputs("type of dict is NULL");
 	if (!PyDict_Check(v)) {
 		return NULL;
 	}

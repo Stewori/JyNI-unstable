@@ -57,7 +57,7 @@
  */
 #define env(errRet) \
 	JNIEnv *env; \
-	if ((*java)->GetEnv(java, (void **)&env, JNI_VERSION_1_2)) \
+	if ((*java)->GetEnv(java, (void **)&env, JNI_VERSION_1_6)) \
 		return errRet
 
 /* For now we assume, nobody would cache _PyThreadState_Current for
@@ -77,6 +77,18 @@
 #define LEAVE_JyNI \
 	if (PyErr_Occurred()) JyErr_InsertCurExc(); \
 	LEAVE_JyNI0
+
+/*
+ * For methods that allow re-entering after a callback into JVM
+ * given the same thread state is used.
+ * Use with care!
+ */
+#define RE_ENTER_JyNI \
+	int reenter = _PyThreadState_Current == tstate; \
+	if (!reenter) { ENTER_JyNI }
+
+#define RE_LEAVE_JyNI \
+	if (!reenter) { LEAVE_JyNI }
 
 /* Cleanly convert a jstring to a cstring with minimal JVM lock-time.
  * Use only once per Function. For further conversions use
@@ -187,7 +199,7 @@
 //#define JY_GC_VAR_SIZE              0 /* Default if JY_GC_FLAG_MASK is active. Just intended as a marker. */
 
 #define Is_StaticSingleton(pyObject) \
-	(pyObject == Py_None || pyObject == Py_Ellipsis || pyObject == Py_NotImplemented)
+	(pyObject == Py_None || pyObject == Py_Ellipsis || pyObject == Py_NotImplemented || pyObject == Py_True || pyObject == Py_False)
 
 #define Is_StaticTypeObject(pyObject) \
 	(PyType_Check(pyObject) && !PyType_HasFeature(Py_TYPE(pyObject), Py_TPFLAGS_HEAPTYPE))
@@ -576,6 +588,8 @@ jstring JyNI_PyObjectAsString(JNIEnv *env, jclass class, jlong handle, jlong tst
 jobject JyNI_PyObjectAsPyString(JNIEnv *env, jclass class, jlong handle, jlong tstate);
 jobject JyNIlookupFromHandle(JNIEnv *env, jclass class, jlong handle);
 jint JyNIcurrentNativeRefCount(JNIEnv *env, jclass class, jlong handle);
+void JyNI_nativeIncref(jlong handle, jlong tstate);
+void JyNI_nativeDecref(jlong handle, jlong tstate);
 jstring JyNIgetNativeTypeName(JNIEnv *env, jclass class, jlong handle);
 //In gcmodule (declared here to preserve original gcmodule.h):
 jboolean JyGC_clearNativeReferences(JNIEnv *env, jclass class, jlongArray references, jlong tstate);
@@ -767,6 +781,31 @@ inline int decWeakRefCount(JyObject* referent);
 extern PyStringObject *nullstring;
 extern PyUnicodeObject *unicode_empty;
 
+//Other hidden stuff:
+typedef struct {
+	PyObject_HEAD
+	PyObject *cm_callable;
+} classmethod;
+
+typedef struct {
+	PyObject_HEAD
+	PyObject *sm_callable;
+} staticmethod;
+
+typedef struct {
+	PyObject_HEAD
+	PyObject *dict;
+} proxyobject;
+
+typedef struct {
+	PyObject_HEAD
+	PyObject *prop_get;
+	PyObject *prop_set;
+	PyObject *prop_del;
+	PyObject *prop_doc;
+	int getter_doc;
+} propertyobject;
+
 /* Some caches to be considered for eternal caching: */
 /* (These macros overwrite those in intobject.c.) */
 #define NSMALLPOSINTS           257
@@ -934,12 +973,23 @@ extern jmethodID JyListFromBackendHandleConstructor;
 
 extern jclass JySetClass;
 extern jmethodID JySetFromBackendHandleConstructor;
-extern jmethodID JySetInstallToPySet;
+//extern jmethodID JySetInstallToPySet;
 
 extern jclass JyLockClass;
 extern jmethodID JyLockConstructor;
 extern jmethodID JyLockAcquire;
 extern jmethodID JyLockRelease;
+
+extern jclass NativeActionClass;
+extern jmethodID NativeAction_constructor;
+extern jfieldID NativeAction_action;
+extern jfieldID NativeAction_obj;
+extern jfieldID NativeAction_nativeRef1;
+extern jfieldID NativeAction_nativeRef2;
+extern jfieldID NativeAction_cTypeName;
+extern jfieldID NativeAction_cMethod;
+extern jfieldID NativeAction_cLine;
+extern jfieldID NativeAction_cFile;
 
 extern jclass JyReferenceMonitorClass;
 extern jmethodID JyRefMonitorMakeDebugInfo;

@@ -1,12 +1,16 @@
 /* This File is based on abstract.c from CPython 2.7.3 release.
  * It has been modified to suit JyNI needs.
  *
- * Copyright of the original file:
- * Copyright (c) 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010,
- * 2011, 2012, 2013, 2014, 2015 Python Software Foundation.  All rights reserved.
  *
  * Copyright of JyNI:
- * Copyright (c) 2013, 2014, 2015 Stefan Richthofer.  All rights reserved.
+ * Copyright (c) 2013, 2014, 2015, 2016 Stefan Richthofer.
+ * All rights reserved.
+ *
+ *
+ * Copyright of Python and Jython:
+ * Copyright (c) 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009,
+ * 2010, 2011, 2012, 2013, 2014, 2015, 2016 Python Software Foundation.
+ * All rights reserved.
  *
  *
  * This file is part of JyNI.
@@ -2426,31 +2430,31 @@ PySequence_Fast(PyObject *v, const char *m)
 //{
 //	return _PySequence_IterSearch(s, o, PY_ITERSEARCH_COUNT);
 //}
-//
-///* Return -1 if error; 1 if ob in seq; 0 if ob not in seq.
-// * Use sq_contains if possible, else defer to _PySequence_IterSearch().
-// */
-//int
-//PySequence_Contains(PyObject *seq, PyObject *ob)
-//{
-//	Py_ssize_t result;
-//	if (PyType_HasFeature(seq->ob_type, Py_TPFLAGS_HAVE_SEQUENCE_IN)) {
-//		PySequenceMethods *sqm = seq->ob_type->tp_as_sequence;
-//		if (sqm != NULL && sqm->sq_contains != NULL)
-//			return (*sqm->sq_contains)(seq, ob);
-//	}
-//	result = _PySequence_IterSearch(seq, ob, PY_ITERSEARCH_CONTAINS);
-//	return Py_SAFE_DOWNCAST(result, Py_ssize_t, int);
-//}
-//
-///* Backwards compatibility */
-//#undef PySequence_In
-//int
-//PySequence_In(PyObject *w, PyObject *v)
-//{
-//	return PySequence_Contains(w, v);
-//}
-//
+
+/* Return -1 if error; 1 if ob in seq; 0 if ob not in seq.
+ * Use sq_contains if possible, else defer to _PySequence_IterSearch().
+ */
+int
+PySequence_Contains(PyObject *seq, PyObject *ob)
+{
+	Py_ssize_t result;
+	if (PyType_HasFeature(seq->ob_type, Py_TPFLAGS_HAVE_SEQUENCE_IN)) {
+		PySequenceMethods *sqm = seq->ob_type->tp_as_sequence;
+		if (sqm != NULL && sqm->sq_contains != NULL)
+			return (*sqm->sq_contains)(seq, ob);
+	}
+	result = _PySequence_IterSearch(seq, ob, PY_ITERSEARCH_CONTAINS);
+	return Py_SAFE_DOWNCAST(result, Py_ssize_t, int);
+}
+
+/* Backwards compatibility */
+#undef PySequence_In
+int
+PySequence_In(PyObject *w, PyObject *v)
+{
+	return PySequence_Contains(w, v);
+}
+
 //Py_ssize_t
 //PySequence_Index(PyObject *s, PyObject *o)
 //{

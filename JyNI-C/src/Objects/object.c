@@ -1,12 +1,16 @@
 /* This File is based on object.c from CPython 2.7.3 release.
  * It has been modified to suit JyNI needs.
  *
- * Copyright of the original file:
- * Copyright (c) 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010,
- * 2011, 2012, 2013, 2014, 2015 Python Software Foundation.  All rights reserved.
  *
  * Copyright of JyNI:
- * Copyright (c) 2013, 2014, 2015 Stefan Richthofer.  All rights reserved.
+ * Copyright (c) 2013, 2014, 2015, 2016 Stefan Richthofer.
+ * All rights reserved.
+ *
+ *
+ * Copyright of Python and Jython:
+ * Copyright (c) 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009,
+ * 2010, 2011, 2012, 2013, 2014, 2015, 2016 Python Software Foundation.
+ * All rights reserved.
  *
  *
  * This file is part of JyNI.
@@ -297,17 +301,17 @@ inline void _PyObject_InitJy(PyObject *op, TypeMapEntry* tme)
 
 inline PyObject * _JyObject_New(PyTypeObject *tp, TypeMapEntry* tme)
 {
-	jputs(__FUNCTION__);
-	jputs(tp->tp_name);
-	if (tme) jputs(tme->py_type->tp_name);
-	else jputs("no tme");
+//	jputs(__FUNCTION__);
+//	jputs(tp->tp_name);
+//	if (tme) jputs(tme->py_type->tp_name);
+//	else jputs("no tme");
 	PyObject *op;
 	JyObject *jy;
 	//if (JyNI_IsBuiltinType(tp))
 	if (tme != NULL)
 	{
-		jputsLong(__LINE__);
-		jputsLong(((tme->flags & JY_TRUNCATE_FLAG_MASK) ? sizeof(PyObject)+tme->truncate_trailing : _PyObject_SIZE(tp)));
+//		jputsLong(__LINE__);
+//		jputsLong(((tme->flags & JY_TRUNCATE_FLAG_MASK) ? sizeof(PyObject)+tme->truncate_trailing : _PyObject_SIZE(tp)));
 		//op = (PyObject *) PyObject_MALLOC(JyObjectBasicSize);
 		//jy = (JyObject*) PyObject_MALLOC(sizeof(JyObject)+((tme->flags & JY_TRUNCATE_FLAG_MASK) ? sizeof(PyObject) : _PyObject_SIZE(tp)) );
 		jy = (JyObject*) PyObject_RawMalloc(sizeof(JyObject)+((tme->flags & JY_TRUNCATE_FLAG_MASK) ? sizeof(PyObject)+tme->truncate_trailing : _PyObject_SIZE(tp)) );
@@ -326,12 +330,12 @@ inline PyObject * _JyObject_New(PyTypeObject *tp, TypeMapEntry* tme)
 		return op;
 	} else
 	{
-		jputsLong(__LINE__);
-		jputsLong(_PyObject_SIZE(tp));
-		jputsLong(sizeof(JyObject)+_PyObject_SIZE(tp));
+//		jputsLong(__LINE__);
+//		jputsLong(_PyObject_SIZE(tp));
+//		jputsLong(sizeof(JyObject)+_PyObject_SIZE(tp));
 		//jy = (JyObject *) PyObject_MALLOC(sizeof(JyObject)+_PyObject_SIZE(tp));
 		jy = (JyObject *) PyObject_RawMalloc(sizeof(JyObject)+_PyObject_SIZE(tp));
-		jputsLong(jy);
+//		jputsLong(jy);
 		if (jy == NULL) return PyErr_NoMemory();
 		jy->flags = JY_CPEER_FLAG_MASK;
 		jy->attr = NULL;
@@ -505,6 +509,8 @@ void _PyObject_Dump(PyObject* op)
 PyObject *
 PyObject_Repr(PyObject *v)
 {
+//	jputs(__FUNCTION__);
+//	jputs(Py_TYPE(v)->tp_name);
 	//todo: support this:
 //	if (PyErr_CheckSignals())
 //		return NULL;
@@ -558,7 +564,6 @@ PyObject_Repr(PyObject *v)
 //		jputs("rep res");
 //		jputs(Py_TYPE(v)->tp_name);
 		res = (*Py_TYPE(v)->tp_repr)(v);
-//		jputs("rep res done");
 		if (res == NULL)
 				return NULL;
 #ifdef Py_USING_UNICODE
@@ -586,6 +591,8 @@ PyObject_Repr(PyObject *v)
 PyObject *
 _PyObject_Str(PyObject *v)
 {
+//	jputs(__FUNCTION__);
+//	jputs(v->ob_type->tp_name);
 	PyObject *res;
 	int type_ok;
 	if (v == NULL)
@@ -597,8 +604,10 @@ _PyObject_Str(PyObject *v)
 	jobject delegate = JyNI_GetJythonDelegate(v);
 	if (delegate)
 	{
+//		jputs("delegate...");
 		env(NULL);
-		return JyNI_PyObject_FromJythonPyObject((*env)->CallObjectMethod(env, delegate, pyObjectAsString));
+		return JyNI_PyObject_FromJythonPyObject(
+				(*env)->CallObjectMethod(env, delegate, pyObject__str__));
 	}
 #ifdef Py_USING_UNICODE
 	if (PyUnicode_CheckExact(v)) {
@@ -608,7 +617,6 @@ _PyObject_Str(PyObject *v)
 #endif
 	if (Py_TYPE(v)->tp_str == NULL)
 		return PyObject_Repr(v);
-
 	// It is possible for a type to have a tp_str representation that loops
 	// infinitely.
 //	env(NULL);
@@ -621,10 +629,7 @@ _PyObject_Str(PyObject *v)
 //		(*env)->ExceptionClear(env);
 //		return NULL;
 //	}
-//	puts("yyy");
 	res = (*Py_TYPE(v)->tp_str)(v);
-//	puts("result type10: ");
-//	puts(res->ob_type->tp_name);
 	Py_LeaveRecursiveCall();
 //	Jy_LeaveRecursiveCall();
 	if (res == NULL) return NULL;
@@ -1376,25 +1381,25 @@ PyObject_GetAttrString(PyObject *v, const char *name)
 {
 //	jputs("PyObject_GetAttrString");
 //	jputs(name);
+//	jputs(Py_TYPE(v)->tp_name);
 	jobject delegate = JyNI_GetJythonDelegate(v);
 	if (delegate)
 	{
-//		jputs("delegate");
+		//puts("delegate");
 		env(NULL);
 		return JyNI_PyObject_FromJythonPyObject(
 			(*env)->CallObjectMethod(env, delegate, pyObject__findattr__,
 				(*env)->CallObjectMethod(env, (*env)->NewStringUTF(env, name), stringIntern)));
 	}
-//	jputs("no delegate");
+	//puts("no delegate");
 
 	PyObject *w, *res;
 
 	if (Py_TYPE(v)->tp_getattr != NULL)
 	{
-		//jputs(Py_TYPE(v)->tp_name);
 		return (*Py_TYPE(v)->tp_getattr)(v, (char*)name);
 	}
-//	jputs("tp_getattr is NULL");
+	//puts("tp_getattr is NULL");
 	w = PyString_InternFromString(name);
 	if (w == NULL)
 		return NULL;
@@ -1413,6 +1418,7 @@ PyObject_GetAttrString(PyObject *v, const char *name)
 int
 PyObject_HasAttrString(PyObject *v, const char *name)
 {
+//	jputs(__FUNCTION__);
 	PyObject *res = PyObject_GetAttrString(v, name);
 	if (res != NULL) {
 		Py_DECREF(res);
@@ -1457,6 +1463,8 @@ PyObject_SetAttrString(PyObject *v, const char *name, PyObject *w)
 PyObject *
 PyObject_GetAttr(PyObject *v, PyObject *name)
 {
+//	jputs(__FUNCTION__);
+//	jputs(((PyStringObject*) name)->ob_sval);
 //	jputs("PyObject_GetAttr, PyObject key");
 	if (!PyString_Check(name)) {
 #ifdef Py_USING_UNICODE
@@ -1478,6 +1486,7 @@ PyObject_GetAttr(PyObject *v, PyObject *name)
 	jobject delegate = JyNI_GetJythonDelegate(v);
 	if (delegate)
 	{
+//		jputs("delegate");
 		env(NULL);
 		return JyNI_PyObject_FromJythonPyObject(
 			(*env)->CallObjectMethod(env, delegate, pyObject__findattr__,
@@ -1504,6 +1513,7 @@ PyObject_GetAttr(PyObject *v, PyObject *name)
 int
 PyObject_HasAttr(PyObject *v, PyObject *name)
 {
+//	jputs(__FUNCTION__);
 	PyObject *res = PyObject_GetAttr(v, name);
 	if (res != NULL) {
 		Py_DECREF(res);
@@ -1593,6 +1603,7 @@ PyObject_SetAttr(PyObject *v, PyObject *name, PyObject *value)
 PyObject **
 _PyObject_GetDictPtr(PyObject *obj)
 { //JyNI-todo: Check for truncation to avoid segfault
+//	jputs(__FUNCTION__);
 	Py_ssize_t dictoffset;
 	PyTypeObject *tp = Py_TYPE(obj);
 	if (!(tp->tp_flags & Py_TPFLAGS_HAVE_CLASS))
@@ -1864,7 +1875,7 @@ _PyObject_NextNotImplemented(PyObject *self)
 PyObject *
 _PyObject_GenericGetAttrWithDict(PyObject *obj, PyObject *name, PyObject *dict)
 {
-//	jputs("_PyObject_GenericGetAttrWithDict:");
+//	jputs(__FUNCTION__);
 //	jputs(PyString_AS_STRING(name));
 //	jputs(obj->ob_type->tp_name);
 	PyTypeObject *tp = Py_TYPE(obj);
@@ -1900,6 +1911,7 @@ _PyObject_GenericGetAttrWithDict(PyObject *obj, PyObject *name, PyObject *dict)
 	jobject delegate = JyNI_GetJythonDelegate(obj);
 	if (delegate)
 	{
+//		puts("delegate");
 //		jputsLong(__LINE__);
 		env(NULL);
 		res = JyNI_PyObject_FromJythonPyObject(
@@ -1907,6 +1919,7 @@ _PyObject_GenericGetAttrWithDict(PyObject *obj, PyObject *name, PyObject *dict)
 				JyNI_interned_jstring_FromPyStringObject(env, (PyStringObject*) name)));
 		goto done;
 	}
+//	puts("no delegate");
 	if (tp->tp_dict == NULL) {
 		if (PyType_Ready(tp) < 0)
 			goto done;
@@ -1948,7 +1961,7 @@ _PyObject_GenericGetAttrWithDict(PyObject *obj, PyObject *name, PyObject *dict)
 	if (descr != NULL &&
 		PyType_HasFeature(descr->ob_type, Py_TPFLAGS_HAVE_CLASS)) {
 		f = descr->ob_type->tp_descr_get;
-		//jputs("call descr_get");//getset_descriptor
+//		puts("call descr_get");
 		//jputs(descr->ob_type->tp_name);
 		if (f != NULL && PyDescr_IsData(descr)) {
 			res = f(descr, obj, (PyObject *)obj->ob_type);
@@ -1956,6 +1969,7 @@ _PyObject_GenericGetAttrWithDict(PyObject *obj, PyObject *name, PyObject *dict)
 			goto done;
 		}
 	}
+//	printf("%d\n", __LINE__);
 //	jputsLong(__LINE__);
 	if (dict == NULL) {
 //		jputs("JyNI-WARNING: Attempting to get dict by offset.");
@@ -1980,6 +1994,7 @@ _PyObject_GenericGetAttrWithDict(PyObject *obj, PyObject *name, PyObject *dict)
 			dict = *dictptr;
 		}
 	}
+//	printf("%d\n", __LINE__);
 //	jputsLong(__LINE__);
 	if (dict != NULL) {
 //		jputs(Py_TYPE(dict)->tp_name);
@@ -1993,12 +2008,14 @@ _PyObject_GenericGetAttrWithDict(PyObject *obj, PyObject *name, PyObject *dict)
 		}
 		Py_DECREF(dict);
 	}
+//	printf("%d\n", __LINE__);
 //	jputsLong(__LINE__);
 	if (f != NULL) {
 		res = f(descr, obj, (PyObject *)Py_TYPE(obj));
 		Py_DECREF(descr);
 		goto done;
 	}
+//	printf("%d\n", __LINE__);
 //	jputsLong(__LINE__);
 	if (descr != NULL) {
 		res = descr;
@@ -2025,8 +2042,8 @@ _PyObject_GenericGetAttrWithDict(PyObject *obj, PyObject *name, PyObject *dict)
 PyObject *
 PyObject_GenericGetAttr(PyObject *obj, PyObject *name)
 {
-//	puts("PyObject_GenericGetAttr:");
-//	puts(PyString_AS_STRING(name));
+//	jputs(__FUNCTION__);
+//	jputs(PyString_AS_STRING(name));
 	PyObject* er = _PyObject_GenericGetAttrWithDict(obj, name, NULL);
 //	puts("PyObject_GenericGetAttr done");
 	return er;

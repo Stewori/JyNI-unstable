@@ -1,12 +1,16 @@
 /* This File is based on modsupport.c from CPython 2.7.3 release.
  * It has been modified to suit JyNI needs.
  *
- * Copyright of the original file:
- * Copyright (c) 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010,
- * 2011, 2012, 2013, 2014, 2015 Python Software Foundation.  All rights reserved.
  *
  * Copyright of JyNI:
- * Copyright (c) 2013, 2014, 2015 Stefan Richthofer.  All rights reserved.
+ * Copyright (c) 2013, 2014, 2015, 2016 Stefan Richthofer.
+ * All rights reserved.
+ *
+ *
+ * Copyright of Python and Jython:
+ * Copyright (c) 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009,
+ * 2010, 2011, 2012, 2013, 2014, 2015, 2016 Python Software Foundation.
+ * All rights reserved.
  *
  *
  * This file is part of JyNI.
@@ -705,9 +709,7 @@ PyModule_AddObject(PyObject *m, const char *name, PyObject *o)
 {
 	//puts("PyModule_AddObject");
 	//puts(name);
-	if (PyModule_AddObjectJy(JyNI_JythonPyObject_FromPyObject(m), name, JyNI_JythonPyObject_FromPyObject(o)))
-		return -1;
-	/*PyObject *dict;
+	//PyObject *dict;
 	if (!PyModule_Check(m)) {
 		PyErr_SetString(PyExc_TypeError,
 					"PyModule_AddObject() needs module as first arg");
@@ -719,7 +721,9 @@ PyModule_AddObject(PyObject *m, const char *name, PyObject *o)
 							"PyModule_AddObject() needs non-NULL value");
 		return -1;
 	}
-
+	if (PyModule_AddObjectJy(JyNI_JythonPyObject_FromPyObject(m), name,
+			JyNI_JythonPyObject_FromPyObject(o))) return -1;
+	/*
 	dict = PyModule_GetDict(m);
 	if (dict == NULL) {
 		// Internal error -- modules must have a dict!
@@ -741,18 +745,17 @@ inline int PyModule_AddObjectJy(jobject m, const char *name, jobject o)
 					"PyModule_AddObject() needs module as first arg");
 		return -1;
 	}*/
-	jobject dict;
-	if (!o) {
-		jputs("o NULL");
-		if (!PyErr_Occurred())
-			PyErr_SetString(PyExc_TypeError,
-							"PyModule_AddObject() needs non-NULL value");
-		return -1;
-	}
+//	if (!o) {
+//		//jputs("o NULL");
+//		if (!PyErr_Occurred())
+//			PyErr_SetString(PyExc_TypeError,
+//							"PyModule_AddObject() needs non-NULL value");
+//		return -1;
+//	}
 
 	//dict = PyModule_GetDict(m);
 	env(-1);
-	dict = (*env)->CallObjectMethod(env, m, pyModuleGetDict);
+	jobject dict = (*env)->CallObjectMethod(env, m, pyModuleGetDict);
 	//puts("dict obtained");
 	if (dict == NULL) {
 		//puts("dict NULL");

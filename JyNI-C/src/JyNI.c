@@ -1,10 +1,13 @@
 /*
- * Copyright of Python and Jython:
- * Copyright (c) 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010,
- * 2011, 2012, 2013, 2014, 2015 Python Software Foundation.  All rights reserved.
- *
  * Copyright of JyNI:
- * Copyright (c) 2013, 2014, 2015 Stefan Richthofer.  All rights reserved.
+ * Copyright (c) 2013, 2014, 2015, 2016 Stefan Richthofer.
+ * All rights reserved.
+ *
+ *
+ * Copyright of Python and Jython:
+ * Copyright (c) 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009,
+ * 2010, 2011, 2012, 2013, 2014, 2015, 2016 Python Software Foundation.
+ * All rights reserved.
  *
  *
  * This file is part of JyNI.
@@ -211,11 +214,11 @@ jint JyNI_setAttrString(JNIEnv *env, jclass class, jlong handle, jstring name, j
  */
 jobject JyNI_repr(JNIEnv *env, jclass class, jlong handle, jlong tstate)
 {
-	ENTER_JyNI
+	RE_ENTER_JyNI
 	PyObject* res = PyObject_Repr((PyObject*) handle);
 	jobject er = JyNI_JythonPyObject_FromPyObject(res);
 	Py_XDECREF(res);
-	LEAVE_JyNI
+	RE_LEAVE_JyNI
 	return er;
 }
 
@@ -351,11 +354,11 @@ jstring JyNI_PyObjectAsString(JNIEnv *env, jclass class, jlong handle, jlong tst
 {
 	//jputs("JyNI_PyObjectAsString");
 	if (!((PyObject*) handle)->ob_refcnt) return NULL;
-	ENTER_JyNI
+	RE_ENTER_JyNI
 	PyStringObject* ps = (PyStringObject*) PyObject_Str((PyObject*) handle);
 	jstring er = JyNI_jstring_FromPyStringObject(env, ps);
 	Py_XDECREF(ps);
-	LEAVE_JyNI
+	RE_LEAVE_JyNI
 	return er;
 }
 
@@ -400,6 +403,30 @@ jobject JyNIlookupFromHandle(JNIEnv *env, jclass class, jlong handle)
 jint JyNIcurrentNativeRefCount(JNIEnv *env, jclass class, jlong handle)
 {
 	return (jint) ((PyObject*) handle)->ob_refcnt;
+}
+
+/*
+ * Class:     JyNI_JyNI
+ * Method:    nativeIncref
+ * Signature: (JJ)I
+ */
+void JyNI_nativeIncref(jlong handle, jlong tstate)
+{
+	RE_ENTER_JyNI
+	Py_INCREF((PyObject*) handle);
+	RE_LEAVE_JyNI
+}
+
+/*
+ * Class:     JyNI_JyNI
+ * Method:    nativeDecref
+ * Signature: (JJ)I
+ */
+void JyNI_nativeDecref(jlong handle, jlong tstate)
+{
+	RE_ENTER_JyNI
+	Py_DECREF((PyObject*) handle);
+	RE_LEAVE_JyNI
 }
 
 /*
@@ -627,29 +654,41 @@ inline void initBuiltinTypes()
 	//builtinTypes[9].sync->pyInit = (pyInitSync) JySync_Init_PyFunction_From_JyFunction;
 	builtinTypes[9].sync->jy2py = (jy2pySync) JySync_PyFunction_From_JyFunction;
 
-/*	builtinTypes[10].py_type = &PyClassMethod_Type;
+	builtinTypes[10].py_type = &PyClassMethod_Type;
 	builtinTypes[10].jy_class = pyClassMethodClass;
-	builtinTypes[10].flags = 0;
+	builtinTypes[10].flags = JySYNC_ON_INIT_FLAGS;
+	builtinTypes[10].sync = malloc(sizeof(SyncFunctions));
+	builtinTypes[10].sync->jyInit = (jyInitSync) JySync_Init_JyClassMethod_From_PyClassMethod;
+	builtinTypes[10].sync->pyInit = (pyInitSync) JySync_Init_PyClassMethod_From_JyClassMethod;
 
 	builtinTypes[11].py_type = &PyStaticMethod_Type;
 	builtinTypes[11].jy_class = pyStaticMethodClass;
-	builtinTypes[11].flags = 0;
+	builtinTypes[11].flags = JySYNC_ON_INIT_FLAGS;
+	builtinTypes[11].sync = malloc(sizeof(SyncFunctions));
+	builtinTypes[11].sync->jyInit = (jyInitSync) JySync_Init_JyStaticMethod_From_PyStaticMethod;
+	builtinTypes[11].sync->pyInit = (pyInitSync) JySync_Init_PyStaticMethod_From_JyStaticMethod;
 
-	builtinTypes[12].py_type = &PyMethodDescr_Type;
+/*	builtinTypes[12].py_type = &PyMethodDescr_Type;
 	builtinTypes[12].jy_class = pyMethodDescrClass;
 	builtinTypes[12].flags = 0;
 
 	builtinTypes[13].py_type = &PyClassMethodDescr_Type;
 	builtinTypes[13].jy_class = pyClassMethodDescrClass;
-	builtinTypes[13].flags = 0;
+	builtinTypes[13].flags = 0;*/
 
 	builtinTypes[14].py_type = &PyDictProxy_Type;
 	builtinTypes[14].jy_class = pyDictProxyClass;
-	builtinTypes[14].flags = 0;
+	builtinTypes[14].flags = JySYNC_ON_INIT_FLAGS;
+	builtinTypes[14].sync = malloc(sizeof(SyncFunctions));
+	builtinTypes[14].sync->jyInit = (jyInitSync) JySync_Init_JyDictProxy_From_PyDictProxy;
+	builtinTypes[14].sync->pyInit = (pyInitSync) JySync_Init_PyDictProxy_From_JyDictProxy;
 
 	builtinTypes[15].py_type = &PyProperty_Type;
 	builtinTypes[15].jy_class = pyPropertyClass;
-	builtinTypes[15].flags = 0;*/
+	builtinTypes[15].flags = JySYNC_ON_INIT_FLAGS;
+	builtinTypes[15].sync = malloc(sizeof(SyncFunctions));
+	builtinTypes[15].sync->jyInit = (jyInitSync) JySync_Init_JyProperty_From_PyProperty;
+	builtinTypes[15].sync->pyInit = (pyInitSync) JySync_Init_PyProperty_From_JyProperty;
 
 	builtinTypes[16].py_type = &PyBool_Type;
 	builtinTypes[16].jy_class = pyBooleanClass;
@@ -1583,6 +1622,7 @@ inline PyObject* JyNI_AllocNativeVar(PyTypeObject* type, Py_ssize_t nitems)
 
 	//if (obj == NULL) return PyErr_NoMemory();
 
+	//Todo: Maybe check 32-bit case.
 	memset(obj, '\0', size);
 
 	if (type->tp_flags & Py_TPFLAGS_HEAPTYPE)
@@ -1660,9 +1700,8 @@ inline PyObject* JyNI_InitPyException(ExceptionMapEntry* eme, jobject src)
 	env(NULL);
 	jy->jy = (*env)->NewWeakGlobalRef(env, src);
 	//if (jy->flags & JY_HAS_JHANDLE_FLAG_MASK == 0) { //Always true here
-	(*env)->CallStaticObjectMethod(env, JyNIClass, JyNISetNativeHandle, src, (jlong) obj, jy->flags & JY_TRUNCATE_FLAG_MASK);
+	(*env)->CallStaticObjectMethod(env, JyNIClass, JyNISetNativeHandle, src, (jlong) obj);//, jy->flags & JY_TRUNCATE_FLAG_MASK);
 	jy->flags |= JY_HAS_JHANDLE_FLAG_MASK;
-	//}
 	jy->flags |= JY_INITIALIZED_FLAG_MASK;
 	if (PyType_IS_GC(eme->exc_type))
 		JyNI_GC_ExploreObject(obj);
@@ -1732,7 +1771,7 @@ inline PyObject* JyNI_InitPyObject(TypeMapEntry* tme, jobject src)
 		env(NULL);
 		jy->jy = (*env)->NewWeakGlobalRef(env, src);
 		if (!(jy->flags & JY_HAS_JHANDLE_FLAG_MASK)) { //some sync-on-init methods might already init this
-			(*env)->CallStaticObjectMethod(env, JyNIClass, JyNISetNativeHandle, src, (jlong) dest, jy->flags & JY_TRUNCATE_FLAG_MASK);
+			(*env)->CallStaticObjectMethod(env, JyNIClass, JyNISetNativeHandle, src, (jlong) dest);//, jy->flags & JY_TRUNCATE_FLAG_MASK);
 			jy->flags |= JY_HAS_JHANDLE_FLAG_MASK;
 		}
 
@@ -1780,7 +1819,7 @@ PyObject* _JyNI_PyObject_FromJythonPyObject(jobject jythonPyObject, jboolean loo
 //	if (jythonPyObject == JyEllipsis) return Py_Ellipsis;
 	env(NULL);
 	if ((*env)->IsSameObject(env, jythonPyObject, NULL)) return NULL;
-	/* In principal, the caller is responsible to decide whether or not
+	/* In principle, the caller is responsible to decide whether or not
 	 * the conversion-result should be INCREFed. However, in singleton cases
 	 * missing INCREFs do more harm than duplicate INCREFs, so for now, we
 	 * INCREF singletons here.
@@ -1791,6 +1830,19 @@ PyObject* _JyNI_PyObject_FromJythonPyObject(jobject jythonPyObject, jboolean loo
 		Py_INCREF(Py_NotImplemented);
 		return Py_NotImplemented;
 	}
+
+	//Special treatment for boolean. We cannot just compare with singletons,
+	//because via Java-API it is possible in Jython to create non-singleton
+	//PyBooleans (Honestly, that constructor should be protected, but changing
+	//that today might break some existing code.).
+	if ((*env)->IsInstanceOf(env, jythonPyObject, pyBooleanClass))
+	{
+		if ((*env)->IsSameObject(env, jythonPyObject, JyTrue)) Py_RETURN_TRUE;
+		if ((*env)->IsSameObject(env, jythonPyObject, JyFalse)) Py_RETURN_FALSE;
+		if ((*env)->GetBooleanField(env, pyBooleanClass, pyBoolVal)) Py_RETURN_TRUE;
+		else Py_RETURN_FALSE;
+	}
+
 	//Todo: Maybe the check for nullstring and unicode_empty is not needed
 	//here and should be processed via usual lookup. (Since these singletons
 	//are on the heap)
@@ -1811,13 +1863,13 @@ PyObject* _JyNI_PyObject_FromJythonPyObject(jobject jythonPyObject, jboolean loo
 	}
 	if (checkForType && (*env)->IsInstanceOf(env, jythonPyObject, pyTypeClass))
 	{
-		//No increfs here, since JyNI_PyTypeObject_FromJythonPyTypeObject returns NEW ref if any.
+		/* No increfs here, since JyNI_PyTypeObject_FromJythonPyTypeObject returns NEW ref if any. */
 		PyObject* er = (PyObject*) JyNI_PyTypeObject_FromJythonPyTypeObject(jythonPyObject);
 		if (er) return er;
-		//No increfs here, since JyNI_PyExceptionType_FromJythonExceptionType returns NEW ref if any.
+		/* No increfs here, since JyNI_PyExceptionType_FromJythonExceptionType returns NEW ref if any. */
 		er = (PyObject*) JyNI_PyExceptionType_FromJythonExceptionType(jythonPyObject);
 		if (er) return er;
-		//heap-type case: Proceed same way like for ordinary PyObjects.
+		/* heap-type case: Proceed same way like for ordinary PyObjects. */
 	}
 	if (checkCPeer && (*env)->IsInstanceOf(env, jythonPyObject, cPeerInterface))
 	{
@@ -1874,12 +1926,10 @@ PyObject* _JyNI_PyObject_FromJythonPyObject(jobject jythonPyObject, jboolean loo
 		//if (tme->py_type) jputs(tme->py_type->tp_name);
 
 		//No need to incref here, since JyNI_InitPyObject returns NEW ref.
-		PyObject* er = JyNI_InitPyObject(tme, jythonPyObject);
-
-		//jputs("handle initialized");
-		return er;
+		return JyNI_InitPyObject(tme, jythonPyObject);
 	} else
 	{
+//		jputsLong(__LINE__);
 		//jputs("tme is NULL...");
 		ExceptionMapEntry* eme = JyNI_PyExceptionMapEntry_FromPyExceptionType(
 			JyNI_PyExceptionType_FromJythonExceptionType(
@@ -1892,6 +1942,7 @@ PyObject* _JyNI_PyObject_FromJythonPyObject(jobject jythonPyObject, jboolean loo
 			PyObject* er = JyNI_InitPyException(eme, jythonPyObject);
 			return er;
 		} else {
+//			jputsLong(__LINE__);
 			// We finally try a hack for some special new-style classes:
 			jobject old_cls = (*env)->CallStaticObjectMethod(env, JyNIClass,
 					JyNI_getTypeOldStyleParent, jythonPyObject);
@@ -1899,7 +1950,7 @@ PyObject* _JyNI_PyObject_FromJythonPyObject(jobject jythonPyObject, jboolean loo
 				return JyNI_InitPyObject(&specialPyInstance, jythonPyObject);
 			}
 			//Todo: Add case for new-style classes or Jython-defined types.
-			//jputs("returning NULL...");
+			jputs("JyNI-warning: Unable to handle object.");
 			//JyNI_jprintJ(jythonPyObject);
 			//JyNI_printJInfo(jythonPyObject);
 			return NULL;
@@ -1957,7 +2008,7 @@ inline jobject JyNI_InitJythonPyException(ExceptionMapEntry* eme, PyObject* src,
 
 	srcJy->jy = (*env)->NewWeakGlobalRef(env, dest);
 	if (!(srcJy->flags & JY_HAS_JHANDLE_FLAG_MASK)) {  //some exc_factories might already init this
-		(*env)->CallStaticObjectMethod(env, JyNIClass, JyNISetNativeHandle, dest, (jlong) src, srcJy->flags & JY_TRUNCATE_FLAG_MASK);
+		(*env)->CallStaticObjectMethod(env, JyNIClass, JyNISetNativeHandle, dest, (jlong) src);//, srcJy->flags & JY_TRUNCATE_FLAG_MASK);
 		srcJy->flags |= JY_HAS_JHANDLE_FLAG_MASK;
 	}
 	srcJy->flags |= JY_INITIALIZED_FLAG_MASK;
@@ -1986,6 +2037,7 @@ inline jobject JyNI_InitJythonPyObject(TypeMapEntry* tme, PyObject* src, JyObjec
 			jputs(tme->py_type->tp_name);
 			PyErr_BadInternalCall();
 		}
+		// Subtype-case. We handle subtype case always with CPeer.
 		Py_INCREF(src);
 		if (tme->flags & SYNC_ON_JY_INIT_FLAG_MASK)
 		{
@@ -2028,13 +2080,14 @@ inline jobject JyNI_InitJythonPyObject(TypeMapEntry* tme, PyObject* src, JyObjec
 	srcJy->jy = (*env)->NewWeakGlobalRef(env, dest);
 	if (!(srcJy->flags & JY_HAS_JHANDLE_FLAG_MASK)) {  //some sync-on-init methods might already init this
 		(*env)->CallStaticObjectMethod(env, JyNIClass, JyNISetNativeHandle, dest,
-				(jlong) src, srcJy->flags & JY_TRUNCATE_FLAG_MASK);
+				(jlong) src);//, srcJy->flags & JY_TRUNCATE_FLAG_MASK);
 		srcJy->flags |= JY_HAS_JHANDLE_FLAG_MASK;
 	}
 	srcJy->flags |= JY_INITIALIZED_FLAG_MASK;
 	//printf("%d_______%s\n", __LINE__, __FUNCTION__);
 	return dest;
 }
+
 
 /*
  * Returns a jobject as a new JNI-local reference, unless op has a
@@ -2048,42 +2101,38 @@ inline jobject JyNI_JythonPyObject_FromPyObject(PyObject* op)
 	if (op == Py_None) return JyNone;
 	if (op == Py_NotImplemented) return JyNotImplemented;
 	if (op == Py_Ellipsis) return JyEllipsis;
+	if (op == Py_True) return JyTrue;
+	if (op == Py_False) return JyFalse;
 	/* nullstring might be uninitialized, which is no matter here.
-	 * If it was uninitialized, the usual string conversion code
-	 * will initialize it and return it in the end. Uninitialized
-	 * nullstring cannot trigger "return JyEmptyString" here, since
-	 * it would already have triggered "return NULL" some lines above.
+	 * Uninitialized nullstring cannot trigger "return JyEmptyString" here,
+	 * since it would already have triggered "return NULL" some lines above.
 	 */
 	if (op == nullstring) return JyEmptyString;
 	if (op == unicode_empty) return JyEmptyUnicode;
-	//jputsLong(__LINE__);
 	if (op->ob_type == NULL)
 	{
-		//jputs("type of op is NULL");
-		//we assume that only type-objects (and as such also exception types) can have ob_type == NULL.
-		//So we call PyType_Ready to init it. However this might fail brutally, if ob_type was
-		//NULL for some other reason. However this would not go far without segfault then anyway.
-		PyType_Ready(op); //this is the wrong place to do this... it's just a quick hack. Find better solution soon...
+		/* we assume that only type-objects (and as such also exception types) can have ob_type == NULL.
+		 * So we call PyType_Ready to init it. However this might fail brutally, if ob_type was
+		 * NULL for some other reason. However this would not go far without segfault then anyway.
+		 */
+		PyType_Ready(op); //this is the wrong place to do this... it's just a quick hack. TODO: Find better solution...
 	}
-	//jputsLong(__LINE__);
-//	jputs("convert:");
-//	if (!op->ob_type) jputs("type is NULL");
-//	if (!op->ob_type->tp_name) jputs("type name is NULL");
-//	jputs(op->ob_type->tp_name);
-	//The following block cares for statically defined type objects.
-	//Heap-types are treated like ordinary objects.
-	if (PyType_Check(op) && !PyType_HasFeature(op->ob_type, Py_TPFLAGS_HEAPTYPE))
+	/* The following block cares for statically defined type objects.
+	 * Heap-types are treated like ordinary objects.
+	 * Note: Don't confuse the following line with checking op->ob_type rather than op itself.
+	 */
+	env(NULL);
+	if (PyType_Check(op) && !PyType_HasFeature((PyTypeObject*) op, Py_TPFLAGS_HEAPTYPE))
 	{
 		if (PyExceptionClass_Check(op))
 		{
-			//jputs("convert exception...");
 			jobject er = JyNI_JythonExceptionType_FromPyExceptionType(op);
-			if (er != NULL) return er;
+			if (er != NULL && !(*env)->IsSameObject(env, er, NULL)) return er;
+			else return _JyNI_JythonPyTypeObject_FromPyTypeObject((PyTypeObject*) op, NULL);
 		} else
 		{
-			//jputs("convert type...");
 			jobject er = JyNI_JythonPyTypeObject_FromPyTypeObject((PyTypeObject*) op);
-			if (er != NULL) return er;
+			if (er != NULL && !(*env)->IsSameObject(env, er, NULL)) return er;
 		}
 	}
 	//jputsLong(__LINE__);
@@ -2093,15 +2142,15 @@ inline jobject JyNI_JythonPyObject_FromPyObject(PyObject* op)
 	//if (JyNI_IsJyObject(op))
 	if (JyObject_IS_INITIALIZED(jy))
 	{
-		//jputsLong(__LINE__);
 		if (jy->flags & JY_CACHE_ETERNAL_FLAG_MASK) {
-			//jputsLong(__LINE__);
 			if (jy->flags & SYNC_ON_PY_TO_JY_FLAG_MASK)
 				JyNI_SyncPy2Jy(op, jy);
-			return jy->jy;
+			/* No local ref needed here, since JY_CACHE_ETERNAL guarantees immortality anyway.
+			 * However we still create a local ref, because the caller might call DeleteLocalRef
+			 * on it, which might fail by JVM-specific behavior.
+			 */
+			return (*env)->NewLocalRef(env, jy->jy);
 		} else {
-			//jputsLong(__LINE__);
-			env(NULL);
 			//This might not work if called by a thread not attached to the JVM:
 			jobject result = (*env)->NewLocalRef(env, jy->jy);
 			/* Originally the following line read
@@ -2114,10 +2163,9 @@ inline jobject JyNI_JythonPyObject_FromPyObject(PyObject* op)
 			 * So a check for result != NULL is sufficient and much more efficient here.
 			 */
 			if (result != NULL) {
-				//jputsLong(__LINE__);
 				if (jy->flags & SYNC_ON_PY_TO_JY_FLAG_MASK)
 					JyNI_SyncPy2Jy(op, jy);
-				return jy->jy;
+				return result;
 			} else {
 				/* This is actually okay. It can happen if the Java-counterpart
 				 * of a mirrored object was collected by Java-gc.
@@ -2138,15 +2186,16 @@ inline jobject JyNI_JythonPyObject_FromPyObject(PyObject* op)
 		//return jy->jy;
 	} //else
 	//{
+	//if (bl) jputs("converting bool2");
 	//jputsLong(__LINE__);
 	TypeMapEntry* tme;
 	if (jy->jy != NULL)
 	{
-		//jputsLong(__LINE__);
+		//if (bl) jputsLong(__LINE__);
 		//printf("%d_______%s\n", __LINE__, __FUNCTION__);
 		tme = (TypeMapEntry*) jy->jy;
 	} else {
-		//jputsLong(__LINE__);
+		//if (bl) jputsLong(__LINE__);
 		//printf("%d_______%s\n", __LINE__, __FUNCTION__);
 		tme = JyNI_JythonTypeEntry_FromPyType(Py_TYPE(op));
 		if (!tme) {
@@ -2171,10 +2220,11 @@ inline jobject JyNI_JythonPyObject_FromPyObject(PyObject* op)
 	{
 		//jputsLong(__LINE__);
 		ExceptionMapEntry* eme = JyNI_PyExceptionMapEntry_FromPyExceptionType(Py_TYPE(op));
-		if (eme)
+		if (eme) {
 			return JyNI_InitJythonPyException(eme, op, jy);
-		else
+		} else
 		{
+			//jputsLong(__LINE__);
 			//printf("%d_______%s\n", __LINE__, __FUNCTION__);
 			//setup and return PyCPeer in this case...
 			env(NULL);
@@ -2192,7 +2242,6 @@ inline jobject JyNI_JythonPyObject_FromPyObject(PyObject* op)
 			//or natively defined metatypes:
 			//jobject opType = JyNI_JythonPyTypeObject_FromPyTypeObject(Py_TYPE(op));
 			//However, the general conversion method should also work and has this support:
-			jobject opType = JyNI_JythonPyObject_FromPyObject(Py_TYPE(op));
 
 			//Py_INCREF(Py_TYPE(op));
 //				if (!opType) jputs("create PyCPeer with opType NULL");
@@ -2206,12 +2255,15 @@ inline jobject JyNI_JythonPyObject_FromPyObject(PyObject* op)
 //				}
 			//jputs("opType-address:");
 			//printf("%u\n", (jlong) opType);
+//			jputs("create PyCPeer for ");
+//			jputs(Py_TYPE(op)->tp_name);
 			if (PyType_Check(op)) {
 				return _JyNI_JythonPyTypeObject_FromPyTypeObject((PyTypeObject*) op, NULL);
 			}
 
+			jobject opType = JyNI_JythonPyObject_FromPyObject(Py_TYPE(op));
 			jobject er = PyObject_IS_GC(op) ?
-					(*env)->NewObject(env, pyCPeerGCClass, pyCPeerGCConstructor, (jlong) op, opType):
+					(*env)->NewObject(env, pyCPeerGCClass, pyCPeerGCConstructor, (jlong) op, opType) :
 					(*env)->NewObject(env, pyCPeerClass, pyCPeerConstructor, (jlong) op, opType);
 			//jobject er = (*env)->NewObject(env, pyCPeerClass, pyCPeerConstructor, (jlong) op, opType);
 			jy->flags |= JY_INITIALIZED_FLAG_MASK;
@@ -2227,6 +2279,7 @@ inline jobject JyNI_JythonPyObject_FromPyObject(PyObject* op)
 inline jobject _JyNI_JythonPyTypeObject_FromPyTypeObject(PyTypeObject* type, jclass cls)
 {
 	//if (type == NULL) return NULL;
+	//jputs(__FUNCTION__);
 	env(NULL);
 	if (cls != NULL)
 	{
@@ -2234,15 +2287,14 @@ inline jobject _JyNI_JythonPyTypeObject_FromPyTypeObject(PyTypeObject* type, jcl
 	} else {
 		//setup and return PyCPeerType in this case...
 		jobject er = (*env)->CallStaticObjectMethod(env, JyNIClass, JyNILookupCPeerFromHandle, (jlong) type);
-		if (er != NULL) return er;
+		//todo: Init this handle
+		//if (er != NULL) return er;
+		if (er != NULL && !(*env)->IsSameObject(env, er, NULL)) return er;
 		//No JyObjects available for types!
 		//JyObject* jy = AS_JY_NO_GC(type); //since we currently don't init types properly, GC-check would not work with PyTypeObjects
 		//if (JyObject_IS_INITIALIZED(jy))
 		//	return jy->jy; //no sync-attempt for types
 		else {
-//			jputs(__FUNCTION__);
-//			jputs(type->tp_name);
-//			jputsLong(type);
 			Py_INCREF(type);
 			jobject er;// = (*env)->NewObject(env, pyCPeerTypeClass, pyCPeerTypeConstructor, (jlong) type);
 			//if (Py_TYPE(type) == NULL) jputs("JyNI-warning: Attempt to convert PyTypeObject with NULL-type.");
@@ -2298,6 +2350,8 @@ inline jobject _JyNI_JythonPyTypeObject_FromPyTypeObject(PyTypeObject* type, jcl
 				// Should we set mro now to empty tuple?
 				// For now we try to get away without it.
 			//}
+			(*env)->CallStaticObjectMethod(env, JyNIClass, JyNISetNativeHandle, er, (jlong) type);
+
 			return er;
 		}
 	}
@@ -2406,8 +2460,8 @@ inline int decWeakRefCount(JyObject* referent)
  * At least in Truncate-Case, this is necessary and
  * at least in CPeer-Case, it is impossible.
  */
-//Only delegate if truncated:
-#define JY_DELEGATE(v, flags) (flags & JY_TRUNCATE_FLAG_MASK)
+//Only delegate if truncated and not subtype:
+#define JY_DELEGATE(v, flags) ((flags & JY_TRUNCATE_FLAG_MASK) && !(flags & JY_SUBTYPE_FLAG_MASK))
 
 //Delegate in every case but CPeer-case:
 //(actually the preferred variant, but lets JyNITkinterTest fail for some reason)
@@ -2433,7 +2487,7 @@ inline jobject JyNI_GetJythonDelegate(PyObject* v)
 		//jputs("is no type object");
 		//jputsLong(v);
 		JyObject* jy = AS_JY(v);
-		//jputsLong(jy->flags);
+//		jputsLong(jy->flags);
 		if (JY_DELEGATE(v, jy->flags)) {
 			//jputs("should delegate...");
 			jobject er = JyNI_JythonPyObject_FromPyObject(v);
@@ -2516,6 +2570,8 @@ inline jint JyNI_GetDLOpenFlags()
 
 inline void JyNI_CleanUp_JyObject(JyObject* obj)
 {
+//	jputs(__FUNCTION__);
+//	jputsLong(FROM_JY(obj));
 	//if (FROM_JY(obj) == Py_None) return;
 	//if (obj == NULL) return;
 	//if (FROM_JY(obj) == NULL) return;
@@ -2589,9 +2645,8 @@ jweak JyEmptyFrozenSet;
 jweak JyEmptyString;
 jweak JyEmptyUnicode;
 jweak JyEmptyTuple;
-//PyUnicodeObject* unicode_empty;
-PyObject* PyTrue;
-PyObject* PyFalse;
+jweak JyTrue;
+jweak JyFalse;
 jweak length0StringArray;
 jweak length0PyObjectArray;
 
@@ -2700,12 +2755,23 @@ jmethodID JyListFromBackendHandleConstructor;
 
 jclass JySetClass;
 jmethodID JySetFromBackendHandleConstructor;
-jmethodID JySetInstallToPySet;
+//jmethodID JySetInstallToPySet;
 
 jclass JyLockClass;
 jmethodID JyLockConstructor;
 jmethodID JyLockAcquire;
 jmethodID JyLockRelease;
+
+jclass NativeActionClass;
+jmethodID NativeAction_constructor;
+jfieldID NativeAction_action;
+jfieldID NativeAction_obj;
+jfieldID NativeAction_nativeRef1;
+jfieldID NativeAction_nativeRef2;
+jfieldID NativeAction_cTypeName;
+jfieldID NativeAction_cMethod;
+jfieldID NativeAction_cLine;
+jfieldID NativeAction_cFile;
 
 jclass JyReferenceMonitorClass;
 jmethodID JyRefMonitorMakeDebugInfo;
@@ -2872,7 +2938,8 @@ jmethodID pyExceptionIsExceptionClass;
 jmethodID pyExceptionIsExceptionInstance;
 
 jclass pyBooleanClass;
-jmethodID pyBooleanConstructor;
+//jmethodID pyBooleanConstructor;
+jfieldID pyBoolVal;
 
 jclass pyArrayClass;
 jmethodID pyArrayGetTypecode;
@@ -3017,11 +3084,28 @@ jfieldID pyFunction__name__;
 //jmethodID pyFunctionCall; use pyObject__call__
 
 jclass pyClassMethodClass;
+jmethodID pyClassMethodConstructor;
+jfieldID pyClassMethod_callable;
+
 jclass pyStaticMethodClass;
-jclass pyMethodDescrClass;
-jclass pyClassMethodDescrClass;
+jmethodID pyStaticMethodConstructor;
+jfieldID pyStaticMethod_callable;
+
+//jclass pyMethodDescrClass;
+//jclass pyClassMethodDescrClass;
+
 jclass pyDictProxyClass;
+jmethodID pyDictProxyConstructor;
+jfieldID pyDictProxy_dict;
+
 jclass pyPropertyClass;
+jmethodID pyPropertyConstructor;
+jfieldID pyProperty_fget;
+jfieldID pyProperty_fset;
+jfieldID pyProperty_fdel;
+jfieldID pyProperty_doc;
+jfieldID pyProperty_docFromGetter;
+
 jclass pyBaseStringClass;
 jclass pyXRangeClass;
 jclass pySequenceIterClass;
@@ -3029,6 +3113,7 @@ jclass pyFastSequenceIterClass;
 jclass pyReversedIteratorClass;
 
 jclass pyBaseSetClass;
+jfieldID pyBaseSet_set;
 jmethodID pyBaseSetSize;
 //jmethodID pyBaseSetClear;
 //jmethodID pyBaseSetContains;
@@ -3340,28 +3425,21 @@ inline jint initJyNI(JNIEnv *env)
 	jclass JyNISetNextResultClassLocal = (*env)->FindClass(env, "JyNI/JyNISetNextResult");
 	JyNISetNextResultClass = (jclass) (*env)->NewWeakGlobalRef(env, JyNISetNextResultClassLocal);
 	(*env)->DeleteLocalRef(env, JyNISetNextResultClassLocal);
-	//puts("   JyNISetNextResultClass created");
 	JyNISetNextResultKeyField = (*env)->GetFieldID(env, JyNISetNextResultClass, "key", "Lorg/python/core/PyObject;");
-	//puts("   key done");
 	JyNISetNextResultNewIndexField = (*env)->GetFieldID(env, JyNISetNextResultClass, "newIndex", "I");
-	//puts("   newIndex done");
 	JyNISetNextResultKeyHandleField = (*env)->GetFieldID(env, JyNISetNextResultClass, "keyHandle", "J");
-	//puts("   keyHandle done");
-	//puts("  initJyNISet done");
 
 	jclass JyListClassLocal = (*env)->FindClass(env, "JyNI/JyList");
 	JyListClass = (jclass) (*env)->NewWeakGlobalRef(env, JyListClassLocal);
 	(*env)->DeleteLocalRef(env, JyListClassLocal);
 	JyListFromBackendHandleConstructor = (*env)->GetMethodID(env, JyListClass, "<init>", "(J)V");
 	//JyListInstallToPyList = (*env)->GetMethodID(env, JyListClass, "installToPyList", "(Lorg/python/core/PyList;)V");
-	//puts("  initJyList done");
 
 	jclass JySetClassLocal = (*env)->FindClass(env, "JyNI/JySet");
 	JySetClass = (jclass) (*env)->NewWeakGlobalRef(env, JySetClassLocal);
 	(*env)->DeleteLocalRef(env, JySetClassLocal);
-	JySetFromBackendHandleConstructor = (*env)->GetMethodID(env, JySetClass, "<init>", "(J)V");
-	JySetInstallToPySet = (*env)->GetMethodID(env, JySetClass, "installToPySet", "(Lorg/python/core/BaseSet;)V");
-	//puts("  initJyNISet done");
+	JySetFromBackendHandleConstructor = (*env)->GetMethodID(env, JySetClass, "<init>", "(Ljava/util/Set;J)V");
+	//JySetInstallToPySet = (*env)->GetMethodID(env, JySetClass, "installToPySet", "(Lorg/python/core/BaseSet;)V");
 
 	jclass JyLockClassLocal = (*env)->FindClass(env, "JyNI/JyLock");
 	JyLockClass = (jclass) (*env)->NewWeakGlobalRef(env, JyLockClassLocal);
@@ -3370,14 +3448,28 @@ inline jint initJyNI(JNIEnv *env)
 	JyLockAcquire = (*env)->GetMethodID(env, JyLockClass, "acquire", "(Z)Z");
 	JyLockRelease = (*env)->GetMethodID(env, JyLockClass, "release", "()V");
 
+	jclass NativeActionClassLocal = (*env)->FindClass(env, "JyNI/JyReferenceMonitor$NativeAction");
+	NativeActionClass = (jclass) (*env)->NewWeakGlobalRef(env, NativeActionClassLocal);
+	(*env)->DeleteLocalRef(env, NativeActionClassLocal);
+	NativeAction_constructor = (*env)->GetMethodID(env, NativeActionClass, "<init>", "()V");
+	NativeAction_action = (*env)->GetFieldID(env, NativeActionClass, "action", "S");
+	NativeAction_obj = (*env)->GetFieldID(env, NativeActionClass, "obj", "Lorg/python/core/PyObject;");
+	NativeAction_nativeRef1 = (*env)->GetFieldID(env, NativeActionClass, "nativeRef1", "J");
+	NativeAction_nativeRef2 = (*env)->GetFieldID(env, NativeActionClass, "nativeRef2", "J");
+	NativeAction_cTypeName = (*env)->GetFieldID(env, NativeActionClass, "cTypeName", "Ljava/lang/String;");
+	NativeAction_cMethod = (*env)->GetFieldID(env, NativeActionClass, "cMethod", "Ljava/lang/String;");
+	NativeAction_cLine = (*env)->GetFieldID(env, NativeActionClass, "cLine", "I");
+	NativeAction_cFile = (*env)->GetFieldID(env, NativeActionClass, "cFile", "Ljava/lang/String;");
+
 	jclass JyReferenceMonitorClassLocal = (*env)->FindClass(env, "JyNI/JyReferenceMonitor");
 	JyReferenceMonitorClass = (jclass) (*env)->NewWeakGlobalRef(env, JyReferenceMonitorClassLocal);
 	(*env)->DeleteLocalRef(env, JyReferenceMonitorClassLocal);
-	JyRefMonitorMakeDebugInfo = (*env)->GetStaticMethodID(env, JyReferenceMonitorClass, "makeDebugInfo",
-			"(Ljava/lang/String;Ljava/lang/String;ILjava/lang/String;)LJyNI/JyReferenceMonitor$ObjectLogDebugInfo;");
+//	JyRefMonitorMakeDebugInfo = (*env)->GetStaticMethodID(env, JyReferenceMonitorClass, "makeDebugInfo",
+//			"(Ljava/lang/String;Ljava/lang/String;ILjava/lang/String;)LJyNI/JyReferenceMonitor$ObjectLogDebugInfo;");
 	JyRefMonitorAddAction = (*env)->GetStaticMethodID(env, JyReferenceMonitorClass, "addNativeAction",
 			//"(SLorg/python/core/PyObject;JJLjava/lang/String;Ljava/lang/String;Ljava/lang/String;ILjava/lang/String;)V");
-			"(SLorg/python/core/PyObject;JJLJyNI/JyReferenceMonitor$ObjectLogDebugInfo;)V");
+			//"(SLorg/python/core/PyObject;JJLJyNI/JyReferenceMonitor$ObjectLogDebugInfo;)V");
+			"(LJyNI/JyReferenceMonitor$NativeAction;)V");
 
 	//Peer stuff:
 	jclass pyCPeerClassLocal = (*env)->FindClass(env, "JyNI/PyCPeer");
@@ -3612,7 +3704,8 @@ inline jint initJythonObjects(JNIEnv *env)
 	if (pyBooleanClassLocal == NULL) { return JNI_ERR;}
 	pyBooleanClass = (jclass) (*env)->NewWeakGlobalRef(env, pyBooleanClassLocal);
 	(*env)->DeleteLocalRef(env, pyBooleanClassLocal);
-	pyBooleanConstructor = (*env)->GetMethodID(env, pyBooleanClass, "<init>", "(Z)V");
+	//pyBooleanConstructor = (*env)->GetMethodID(env, pyBooleanClass, "<init>", "(Z)V");
+	pyBoolVal = (*env)->GetFieldID(env, pyBooleanClass, "value", "Z");
 
 	jclass pyIntClassLocal = (*env)->FindClass(env, "org/python/core/PyInteger");
 	if (pyIntClassLocal == NULL) { return JNI_ERR;}
@@ -3825,31 +3918,43 @@ inline jint initJythonObjects(JNIEnv *env)
 	if (pyClassMethodClassLocal == NULL) { return JNI_ERR;}
 	pyClassMethodClass = (jclass) (*env)->NewWeakGlobalRef(env, pyClassMethodClassLocal);
 	(*env)->DeleteLocalRef(env, pyClassMethodClassLocal);
+	pyClassMethodConstructor = (*env)->GetMethodID(env, pyClassMethodClass, "<init>", "(Lorg/python/core/PyObject;)V");
+	pyClassMethod_callable = (*env)->GetFieldID(env, pyClassMethodClass, "callable", "Lorg/python/core/PyObject;");
 
 	jclass pyStaticMethodClassLocal = (*env)->FindClass(env, "org/python/core/PyStaticMethod");
 	if (pyStaticMethodClassLocal == NULL) { return JNI_ERR;}
 	pyStaticMethodClass = (jclass) (*env)->NewWeakGlobalRef(env, pyStaticMethodClassLocal);
 	(*env)->DeleteLocalRef(env, pyStaticMethodClassLocal);
+	pyStaticMethodConstructor = (*env)->GetMethodID(env, pyStaticMethodClass, "<init>", "(Lorg/python/core/PyObject;)V");
+	pyStaticMethod_callable = (*env)->GetFieldID(env, pyStaticMethodClass, "callable", "Lorg/python/core/PyObject;");
 
-	jclass pyMethodDescrClassLocal = (*env)->FindClass(env, "org/python/core/PyMethodDescr");
-	if (pyMethodDescrClassLocal == NULL) { return JNI_ERR;}
-	pyMethodDescrClass = (jclass) (*env)->NewWeakGlobalRef(env, pyMethodDescrClassLocal);
-	(*env)->DeleteLocalRef(env, pyMethodDescrClassLocal);
-
-	jclass pyClassMethodDescrClassLocal = (*env)->FindClass(env, "org/python/core/PyClassMethodDescr");
-	if (pyClassMethodDescrClassLocal == NULL) { return JNI_ERR;}
-	pyClassMethodDescrClass = (jclass) (*env)->NewWeakGlobalRef(env, pyClassMethodDescrClassLocal);
-	(*env)->DeleteLocalRef(env, pyClassMethodDescrClassLocal);
+//	jclass pyMethodDescrClassLocal = (*env)->FindClass(env, "org/python/core/PyMethodDescr");
+//	if (pyMethodDescrClassLocal == NULL) { return JNI_ERR;}
+//	pyMethodDescrClass = (jclass) (*env)->NewWeakGlobalRef(env, pyMethodDescrClassLocal);
+//	(*env)->DeleteLocalRef(env, pyMethodDescrClassLocal);
+//
+//	jclass pyClassMethodDescrClassLocal = (*env)->FindClass(env, "org/python/core/PyClassMethodDescr");
+//	if (pyClassMethodDescrClassLocal == NULL) { return JNI_ERR;}
+//	pyClassMethodDescrClass = (jclass) (*env)->NewWeakGlobalRef(env, pyClassMethodDescrClassLocal);
+//	(*env)->DeleteLocalRef(env, pyClassMethodDescrClassLocal);
 
 	jclass pyDictProxyClassLocal = (*env)->FindClass(env, "org/python/core/PyDictProxy");
 	if (pyDictProxyClassLocal == NULL) { return JNI_ERR;}
 	pyDictProxyClass = (jclass) (*env)->NewWeakGlobalRef(env, pyDictProxyClassLocal);
 	(*env)->DeleteLocalRef(env, pyDictProxyClassLocal);
+	pyDictProxyConstructor = (*env)->GetMethodID(env, pyDictProxyClass, "<init>", "(Lorg/python/core/PyObject;)V");
+	pyDictProxy_dict = (*env)->GetFieldID(env, pyDictProxyClass, "dict", "Lorg/python/core/PyObject;");
 
 	jclass pyPropertyClassLocal = (*env)->FindClass(env, "org/python/core/PyProperty");
 	if (pyPropertyClassLocal == NULL) { return JNI_ERR;}
 	pyPropertyClass = (jclass) (*env)->NewWeakGlobalRef(env, pyPropertyClassLocal);
 	(*env)->DeleteLocalRef(env, pyPropertyClassLocal);
+	pyPropertyConstructor = (*env)->GetMethodID(env, pyPropertyClass, "<init>", "()V");
+	pyProperty_fget = (*env)->GetFieldID(env, pyPropertyClass, "fget", "Lorg/python/core/PyObject;");
+	pyProperty_fset = (*env)->GetFieldID(env, pyPropertyClass, "fset", "Lorg/python/core/PyObject;");
+	pyProperty_fdel = (*env)->GetFieldID(env, pyPropertyClass, "fdel", "Lorg/python/core/PyObject;");
+	pyProperty_doc = (*env)->GetFieldID(env, pyPropertyClass, "doc", "Lorg/python/core/PyObject;");
+	pyProperty_docFromGetter = (*env)->GetFieldID(env, pyPropertyClass, "docFromGetter", "Z");
 
 	jclass pyBaseStringClassLocal = (*env)->FindClass(env, "org/python/core/PyBaseString");
 	if (pyBaseStringClassLocal == NULL) { return JNI_ERR;}
@@ -3880,6 +3985,7 @@ inline jint initJythonObjects(JNIEnv *env)
 	if (pyBaseSetClassLocal == NULL) { return JNI_ERR;}
 	pyBaseSetClass = (jclass) (*env)->NewWeakGlobalRef(env, pyBaseSetClassLocal);
 	(*env)->DeleteLocalRef(env, pyBaseSetClassLocal);
+	pyBaseSet_set = (*env)->GetFieldID(env, pyBaseSetClass, "_set", "Ljava/util/Set;");
 	pyBaseSetSize = (*env)->GetMethodID(env, pyBaseSetClass, "size", "()I");
 //	pyBaseSetClear = (*env)->GetMethodID(env, pyBaseSetClass, "clear", "()V");
 //	pyBaseSetContains = (*env)->GetMethodID(env, pyBaseSetClass, "contains", "(Ljava/lang/Object;)Z");
@@ -4116,9 +4222,6 @@ inline jint initJythonObjects(JNIEnv *env)
 
 inline jint initSingletons(JNIEnv *env)
 {
-	//PyTrue = JyNI_PyObject_FromJythonPyObject((*env)->NewWeakGlobalRef(env, (*env)->NewObject(env, pyBooleanClass, pyBooleanConstructor, JNI_TRUE)));
-	//PyFalse = JyNI_PyObject_FromJythonPyObject((*env)->NewWeakGlobalRef(env, (*env)->NewObject(env, pyBooleanClass, pyBooleanConstructor, JNI_FALSE)));
-
 	/*jmethodID pyUnicodeEmptyConstructor = (*env)->GetMethodID(env, pyUnicodeClass, "<init>", "()V");
 	jobject unicode_emptyLocal = (*env)->NewObject(env, pyUnicodeClass, pyUnicodeEmptyConstructor);
 	unicode_empty = JyNI_PyObject_FromJythonPyObject((*env)->NewWeakGlobalRef(env, unicode_emptyLocal));
@@ -4145,6 +4248,10 @@ inline jint initSingletons(JNIEnv *env)
 	length0StringArray = (*env)->NewWeakGlobalRef(env, (*env)->GetStaticObjectField(env, pyPyClass, jyEmptyStringArray));
 	jfieldID jyEmptyPyObjArray = (*env)->GetStaticFieldID(env, pyPyClass, "EmptyObjects", "[Lorg/python/core/PyObject;");
 	length0PyObjectArray = (*env)->NewWeakGlobalRef(env, (*env)->GetStaticObjectField(env, pyPyClass, jyEmptyPyObjArray));
+	jfieldID jyTrue = (*env)->GetStaticFieldID(env, pyPyClass, "True", "Lorg/python/core/PyBoolean;");
+	JyTrue = (*env)->NewWeakGlobalRef(env, (*env)->GetStaticObjectField(env, pyPyClass, jyTrue));
+	jfieldID jyFalse = (*env)->GetStaticFieldID(env, pyPyClass, "False", "Lorg/python/core/PyBoolean;");
+	JyFalse = (*env)->NewWeakGlobalRef(env, (*env)->GetStaticObjectField(env, pyPyClass, jyFalse));
 
 
 //	length0StringArray = (*env)->NewGlobalRef(env, (*env)->NewObjectArray(env, 0, stringClass, NULL));
@@ -4247,6 +4354,8 @@ void JyNI_unload(JavaVM *jvm)
 	(*env)->DeleteWeakGlobalRef(env, JyEmptyFrozenSet);
 	(*env)->DeleteWeakGlobalRef(env, JyEmptyString);
 	(*env)->DeleteWeakGlobalRef(env, JyEmptyUnicode);
+	(*env)->DeleteWeakGlobalRef(env, JyTrue);
+	(*env)->DeleteWeakGlobalRef(env, JyFalse);
 
 	(*env)->DeleteWeakGlobalRef(env, length0StringArray);
 	(*env)->DeleteWeakGlobalRef(env, length0PyObjectArray);

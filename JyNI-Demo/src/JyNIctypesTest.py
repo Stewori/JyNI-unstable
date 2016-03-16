@@ -1,11 +1,13 @@
 '''
  * Copyright of JyNI:
- * Copyright (c) 2013, 2014, 2015 Stefan Richthofer.  All rights reserved.
+ * Copyright (c) 2013, 2014, 2015, 2016 Stefan Richthofer.
+ * All rights reserved.
  *
  *
  * Copyright of Python and Jython:
- * Copyright (c) 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010,
- * 2011, 2012, 2013, 2014, 2015 Python Software Foundation.  All rights reserved.
+ * Copyright (c) 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009,
+ * 2010, 2011, 2012, 2013, 2014, 2015, 2016 Python Software Foundation.
+ * All rights reserved.
  *
  *
  * This file is part of JyNI.
@@ -33,19 +35,18 @@ import sys
 
 #Include native ctypes:
 sys.path.append('/usr/lib/python2.7/lib-dynload')
-#sys.path.append('/home/stefan/eclipseWorkspace/ctypes')
 
 import platform
 isMac = platform.java_ver()[-1][0] == 'Mac OS X' or platform.mac_ver()[0] != ''
-import ctypes
+from ctypes import *
 
 print "Demo of ctypes with os.name: "+platform.os.name
 print ""
 
 if isMac:
-	libc = ctypes.CDLL('libc.dylib')
+	libc = CDLL('libc.dylib')
 else:
-	libc = ctypes.CDLL('libc.so.6')
+	libc = CDLL('libc.so.6')
 
 class Bottles:
 	def __init__(self, number):
@@ -60,11 +61,17 @@ printf = libc.printf
 printf("%d bottles of beer\n", 42)
 printf("%d bottles of beer\n", Bottles(73))
 
-#from ctypes import c_char_p, c_int, c_double
-#printf.argtypes = [c_char_p, c_char_p, c_int, c_double]
-#printf("String '%s', Int %d, Double %f\n", "Hi", 10, 2.2)
+printf.argtypes = [c_char_p, c_char_p, c_int, c_double]
+printf("String '%s'; Int %d; Double %f\n", "Hi", 10, 2.2)
 
-from ctypes import *
+buffer = c_buffer("\000", 10)
+libc.sprintf(buffer, "Spam%d", 776)
+
+print repr(buffer.value)
+# Currently fails:
+print repr(buffer.raw),
+print "(should be 'Spam776\\x00\\x00\\x00')"
+
 class cell(Structure):
 	pass
 
@@ -83,28 +90,16 @@ for i in range(8):
 	print p.name,
 	p = p.next[0]
 
-print ''
-# print c_int
-# print c_int.mro()
-# print type(c_int)
-
+print ""
 print "--------------------"
-print type(c_int)
-#print type(c_int).__mro__
-print c_int.mro()
-#print c_int.__mro__
-#from JyNI import JyNI
-#JyNI.jPrintInfo(c_int)
 
-#print c_int.__dict__
 IntArray6 = c_int * 6
 
-print type(IntArray6)
-print IntArray6.mro()
+#print type(IntArray6)
+#print IntArray6.mro()
 
 ia = IntArray6(5, 1, 7, 33, 99, -7)
 print ia
-# #ia = [5, 1, 7, 33, 99]
 qsort = libc.qsort
 
 def py_cmp_func(a, b):
@@ -116,7 +111,10 @@ cmp_func = CMPFUNC(py_cmp_func)
 qsort(ia, len(ia), sizeof(c_int), cmp_func)
 for i in range(len(ia)):
 	print ia[i],
-#for i in ia: print i,
+
+# Iterator-related builtins not yet supported:
+# for i in ia: print i,
+
 print ""
 print "===================="
 print "exited normally"

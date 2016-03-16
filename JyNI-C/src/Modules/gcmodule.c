@@ -1,12 +1,16 @@
 /* This File is based on gcmodule.c from CPython 2.7.3 release.
  * It has been modified to suit JyNI needs.
  *
- * Copyright of the original file:
- * Copyright (c) 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010,
- * 2011, 2012, 2013, 2014, 2015 Python Software Foundation.  All rights reserved.
  *
  * Copyright of JyNI:
- * Copyright (c) 2013, 2014, 2015 Stefan Richthofer.  All rights reserved.
+ * Copyright (c) 2013, 2014, 2015, 2016 Stefan Richthofer.
+ * All rights reserved.
+ *
+ *
+ * Copyright of Python and Jython:
+ * Copyright (c) 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009,
+ * 2010, 2011, 2012, 2013, 2014, 2015, 2016 Python Software Foundation.
+ * All rights reserved.
  *
  *
  * This file is part of JyNI.
@@ -1685,10 +1689,9 @@ static jboolean hasJyGCHead(JNIEnv* env, PyObject* op, JyObject* jy)
 
 static jobject obtainJyGCHead(JNIEnv* env, PyObject* op, JyObject* jy)
 {
-	//jputs(__FUNCTION__);
+//	jputs(__FUNCTION__);
 	if (Is_Static_PyObject(op))
 	{
-		//jputsLong(__LINE__);
 		//jputs("JyNI-Warning: obtainJyGCHead was called with non-heap object.");
 		jobject result = (*env)->CallStaticObjectMethod(env, JyNIClass,
 				JyNI_getNativeStaticJyGCHead, (jlong) op);
@@ -1698,13 +1701,10 @@ static jobject obtainJyGCHead(JNIEnv* env, PyObject* op, JyObject* jy)
 			(*env)->CallStaticVoidMethod(env, JyNIClass, JyNI_registerNativeStaticJyGCHead,
 					(jlong) op, result);
 		}
-		//jputsLong(__LINE__);
 		return result;
 	}
-	//jputsLong(__LINE__);
 	if (jy->flags & JY_CPEER_FLAG_MASK)
 	{
-		//jputsLong(__LINE__);
 //		if (PyType_Check(op)) {
 //			jputs("Warning: Exploring Type:");
 //			jputs(((PyTypeObject*) op)->tp_name);
@@ -1727,7 +1727,6 @@ static jobject obtainJyGCHead(JNIEnv* env, PyObject* op, JyObject* jy)
 		return er;
 	} else
 	{
-		//jputsLong(__LINE__);
 		jboolean hasHeadAttr = JyObject_HasJyGCHead(op, jy);
 		jobject result = NULL;
 		if (hasHeadAttr)
@@ -1802,6 +1801,7 @@ static jobject obtainJyGCHead(JNIEnv* env, PyObject* op, JyObject* jy)
 static int
 visit_exploreArrayLink(PyObject *op, void *arg)
 {
+//	jputs(__FUNCTION__);
 	/* JyNI-note:
 	 * It is hard to decide whether to explore non-heap-objects here or not.
 	 * On one hand they should be kept alive anyway. However there might be
@@ -2329,7 +2329,15 @@ jboolean JyGC_clearNativeReferences(JNIEnv *env, jclass class, jlongArray refere
 	PyObject* refPool[size];
 	jint graphResult[size];
 	jlong* arr = (*env)->GetLongArrayElements(env, references, NULL);
-	memcpy(refPool, arr, size*sizeof(PyObject*));
+#if __SIZEOF_POINTER__ == 8
+	/* Regardless of the platform jlong is always 8 bytes. So this branch is processed
+	 * whenever jlong and PyObject* are of same size, i.e. memcpy can be used:
+	 */
+	Py_MEMCPY(refPool, arr, size*sizeof(PyObject*));
+#else
+	for (i = 0; i < size; ++i) refPool[i] = (PyObject*) arr[i];
+#endif
+
 	(*env)->ReleaseLongArrayElements(env, references, arr, JNI_ABORT);
 	jboolean graphInvalid = checkReferenceGraph(refPool, size, graphResult);
 	if (graphInvalid)
@@ -2930,7 +2938,7 @@ _PyObject_GC_Resize(PyVarObject *op, Py_ssize_t nitems)
 		{
 			/* take care to correct the handle on java-side */
 			env(NULL);
-			(*env)->CallStaticVoidMethod(env, JyNIClass, JyNISetNativeHandle, jy->jy, (jlong) op, (jy->flags & JY_TRUNCATE_FLAG_MASK) != 0);
+			(*env)->CallStaticVoidMethod(env, JyNIClass, JyNISetNativeHandle, jy->jy, (jlong) op);//, (jy->flags & JY_TRUNCATE_FLAG_MASK) != 0);
 			//todo: maybe do sync here
 		}
 		//JyNIDebug2(JY_NATIVE_REALLOC_GC, AS_JY_WITH_GC(op0), jy, basicsize, NULL);
