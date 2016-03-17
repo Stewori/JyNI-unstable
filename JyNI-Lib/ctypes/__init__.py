@@ -2,12 +2,15 @@
 #  This File is based on ctypes/__init__.py from CPython 2.7.8.
 #  It has been modified to suit JyNI needs.
 #
-#  Copyright of the original file:
-#  Copyright (c) 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010,
-#  2011, 2012, 2013, 2014, 2015 Python Software Foundation.  All rights reserved.
-#
 #  Copyright of JyNI:
-#  Copyright (c) 2013, 2014, 2015 Stefan Richthofer.  All rights reserved.
+#  Copyright (c) 2013, 2014, 2015, 2016 Stefan Richthofer.
+#  All rights reserved.
+#
+#
+#  Copyright of Python and Jython:
+#  Copyright (c) 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009,
+#  2010, 2011, 2012, 2013, 2014, 2015, 2016 Python Software Foundation.
+#  All rights reserved.
 #
 #
 #  This file is part of JyNI.
@@ -48,21 +51,23 @@ if __version__ != _ctypes_version:
 if _os.name in ("nt", "ce"):
     from _ctypes import FormatError
 
-isPosix = _os.name == "posix"
-if _os.name == "java":
-    from JyNI import JyNI
-    isPosix = JyNI.isPosix()
+#isPosix = _os.name == "posix"
+#if _os.name == "java":
+#    from JyNI import JyNI
+#    isPosix = JyNI._os.name == "posix"()
 
 DEFAULT_MODE = RTLD_LOCAL
 #todo: Work out Jython-compliant replacement for _sys.platform == "darwin"
-if isPosix and _sys.platform == "darwin":
+#if _os.name == "posix" and _sys.platform == "darwin":
     # On OS X 10.3, we use RTLD_GLOBAL as default mode
     # because RTLD_LOCAL does not work at least on some
     # libraries.  OS X 10.3 is Darwin 7, so we check for
     # that.
 
-    if int(_os.uname()[2].split('.')[0]) < 8:
-        DEFAULT_MODE = RTLD_GLOBAL
+# JyNI-Note: So far we ignore OS-versions before 8.
+#            (at least until uname is added to Jython 2.7.2.)
+#    if int(_os.uname()[2].split('.')[0]) < 8:
+#        DEFAULT_MODE = RTLD_GLOBAL
 
 from _ctypes import FUNCFLAG_CDECL as _FUNCFLAG_CDECL, \
      FUNCFLAG_PYTHONAPI as _FUNCFLAG_PYTHONAPI, \
@@ -169,27 +174,8 @@ if _os.name in ("nt", "ce"):
     if WINFUNCTYPE.__doc__:
         WINFUNCTYPE.__doc__ = CFUNCTYPE.__doc__.replace("CFUNCTYPE", "WINFUNCTYPE")
 
-elif isPosix: #_os.name == "posix":
+elif _os.name == "posix": #isPosix:
     from _ctypes import dlopen as _dlopen
-
-# elif _os.name == "java":
-#     from JyNI import JyNI
-#     if JyNI.isPosix():
-#         from _ctypes import dlopen as _dlopen
-#     #else:
-#     #    todo...
-
-# print "os:"
-# print _os.name
-# import platform
-# print platform.system()
-# print platform.java_ver()
-# import sys
-# print sys.platform
-# print "JyNI-os:"
-# from JyNI import JyNI
-# print JyNI.getPlatform()
-# print "is posix? "+str(JyNI.isPosix())
 
 from _ctypes import sizeof, byref, addressof, alignment, resize
 from _ctypes import get_errno, set_errno
@@ -323,6 +309,7 @@ def _reset_cache():
     # _SimpleCData.c_char_p_from_param
     POINTER(c_char).from_param = c_char_p.from_param
     _pointer_type_cache[None] = c_void_p
+
     # XXX for whatever reasons, creating the first instance of a callback
     # function is needed for the unittests on Win64 to succeed.  This MAY
     # be a compiler bug, since the problem occurs only when _ctypes is

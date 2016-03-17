@@ -2,12 +2,15 @@
 #  This File is based on ctypes/util.py from CPython 2.7.8.
 #  It is bundled with JyNI for convenience.
 #
-#  Copyright of the original file:
-#  Copyright (c) 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010,
-#  2011, 2012, 2013, 2014, 2015 Python Software Foundation.  All rights reserved.
-#
 #  Copyright of JyNI:
-#  Copyright (c) 2013, 2014, 2015 Stefan Richthofer.  All rights reserved.
+#  Copyright (c) 2013, 2014, 2015, 2016 Stefan Richthofer.
+#  All rights reserved.
+#
+#
+#  Copyright of Python and Jython:
+#  Copyright (c) 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009,
+#  2010, 2011, 2012, 2013, 2014, 2015, 2016 Python Software Foundation.
+#  All rights reserved.
 #
 #
 #  This file is part of JyNI.
@@ -35,6 +38,11 @@
 #  This file should be kept compatible with Python 2.3, see PEP 291. #
 ######################################################################
 import sys, os
+
+isPosix = os.name == "posix"
+if os.name == "java":
+    from JyNI import JyNI
+    isPosix = JyNI.isPosix()
 
 # find_library(name) returns the pathname of a library, or None.
 if os.name == "nt":
@@ -104,7 +112,7 @@ if os.name == "ce":
     def find_library(name):
         return name
 
-if os.name == "posix" and sys.platform == "darwin":
+if isPosix and sys.platform == "darwin":
     from ctypes.macholib.dyld import dyld_find as _dyld_find
     def find_library(name):
         possible = ['lib%s.dylib' % name,
@@ -117,7 +125,7 @@ if os.name == "posix" and sys.platform == "darwin":
                 continue
         return None
 
-elif os.name == "posix":
+elif isPosix:
     # Andreas Degert's find functions, using gcc, /sbin/ldconfig, objdump
     import re, tempfile, errno
 
@@ -284,7 +292,7 @@ def test():
         print cdll.load("msvcrt")
         print find_library("msvcrt")
 
-    if os.name == "posix":
+    if isPosix:
         # find and load_version
         print find_library("m")
         print find_library("c")
