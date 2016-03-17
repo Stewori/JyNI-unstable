@@ -24,7 +24,7 @@ PLATFORM = linux
 
 JYNI = ./JyNI-Java/src
 JYNIBIN = ./JyNI-Java/bin
-INCLUDES = -I./JyNI-C/include -I./JyNI-C/include/Python_JyNI -I./JyNI-Java/include -I$(JAVA_HOME)/include -I$(JAVA_HOME)/include/$(PLATFORM) -I$(PY_INCLUDE)
+INCLUDES = -I./JyNI-C/include -I./JyNI-C/include/Python_JyNI -I./JyNI-Java/include -I$(JAVA_HOME)/include -I$(JAVA_HOME)/include/$(PLATFORM) -I$(PY_INCLUDE) -I/usr/include/tcl8.6
 CFLAGS = -fPIC -Wl,--add-stdcall-alias -c $(INCLUDES)
 LDFLAGS = -shared
 # You can optionally remove -source 1.7 -target 1.7. It's purpose is to achieve maximal compatibility by default.
