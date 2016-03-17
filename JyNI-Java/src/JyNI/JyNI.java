@@ -1170,6 +1170,9 @@ public class JyNI {
 
 	public static boolean isLibraryFileAvailable(String libname) {
 		if (JyNIInitializer.importer == null) return false;
+		if (JyNIImporter.dynModules.containsKey(libname))
+			// Must be checked here to account for statically linked libs
+			return true;
 		String suf = "."+JyNIImporter.getSystemDependendDynamicLibraryExtension();
 		for (String s : JyNIInitializer.importer.libPaths)
 		{

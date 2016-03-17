@@ -72,20 +72,27 @@ jobject JyNI_loadModule(JNIEnv *env, jclass class, jstring moduleName, jstring m
 	char mName[strlen(utf_string)+1];
 	strcpy(mName, utf_string);
 	(*env)->ReleaseStringUTFChars(env, moduleName, utf_string);
-	utf_string = (*env)->GetStringUTFChars(env, modulePath, NULL);
-	//"+1" for 0-termination:
-	char mPath[strlen(utf_string)+1];
-	strcpy(mPath, utf_string);
-	(*env)->ReleaseStringUTFChars(env, moduleName, utf_string);
-	FILE *fp;
-	fp = fopen(mPath, "r" PY_STDIOTEXTMODE);
-	if (fp == NULL)
-		//PyErr_SetFromErrno(PyExc_IOError);
-		jputs("some error happened opening the file");
 
-	jobject er = _PyImport_LoadDynamicModuleJy(mName, mPath, fp);
-	if (fclose(fp))
-		jputs("Some error occurred on file close");
+	jobject er;
+
+	if (!(*env)->IsSameObject(env, modulePath, NULL)) {
+		utf_string = (*env)->GetStringUTFChars(env, modulePath, NULL);
+		//"+1" for 0-termination:
+		char mPath[strlen(utf_string)+1];
+		strcpy(mPath, utf_string);
+		(*env)->ReleaseStringUTFChars(env, moduleName, utf_string);
+		FILE *fp;
+		fp = fopen(mPath, "r" PY_STDIOTEXTMODE);
+		if (fp == NULL)
+			//PyErr_SetFromErrno(PyExc_IOError);
+			jputs("some error happened opening the file");
+
+		er = _PyImport_LoadDynamicModuleJy(mName, mPath, fp);
+		if (fclose(fp)) jputs("Some error occurred on file close");
+	} else
+		// Attempt to load a module statically linked into JyNI.so:
+		er = _PyImport_LoadDynamicModuleJy(mName, NULL, NULL);
+
 	LEAVE_JyNI
 	return er;
 }

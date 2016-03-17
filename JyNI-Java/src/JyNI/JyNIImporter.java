@@ -73,6 +73,8 @@ public class JyNIImporter extends PyObject {
 	
 	public PyObject __call__(PyObject args[], String keywords[]) {
 		String s = args[0].toString();
+//		System.out.println("call... "+s);
+		if (s.endsWith("Lib")) return this;
 		File f = new File(s);
 		if (!f.exists() || !f.isDirectory()) {
 			throw Py.ImportError("unable to handle");
@@ -109,6 +111,8 @@ public class JyNIImporter extends PyObject {
 	 *		 otherwise
 	 */
 	public PyObject find_module(String name, PyObject path) {
+//		System.out.println("find... "+name);
+		if (dynModules.containsKey(name)) return this;
 		/*Py.writeDebug("import", "trying " + name
 				+ " in packagemanager for path " + path);
 		PyObject ret = PySystemState.packageManager.lookupName(name.intern());
@@ -145,6 +149,7 @@ public class JyNIImporter extends PyObject {
 	}
 
 	public PyObject load_module(String name) {
+//		System.out.println("load... "+name);
 		// This stuff should move to JyNIInitializer, but there it currently
 		// breaks sysconfig.py. Will be fixed for Jython 2.7.2.
 		PySystemState sysState = Py.getSystemState();

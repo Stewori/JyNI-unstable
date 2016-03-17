@@ -32,7 +32,7 @@ INCLUDES = -I./JyNI-C/include -I./JyNI-C/include/Python_JyNI -I./JyNI-Java/inclu
 #CFLAGS = -fPIC -Wl,--add-stdcall-alias -c $(INCLUDES)
 CFLAGS = -std=gnu89 -fPIC -Wl,--add-stdcall-alias -c $(INCLUDES)
 
-LDFLAGS = -shared -undefined dynamic_lookup
+LDFLAGS = -shared -undefined dynamic_lookup -ltk8.6 -ltcl8.6
 # You can optionally remove -source 1.7 -target 1.7. It's purpose is to achieve maximal compatibility by default.
 JFLAGS= -cp $(JYTHON):$(JYNI) -d $(JYNIBIN) -source 1.7 -target 1.7
 
