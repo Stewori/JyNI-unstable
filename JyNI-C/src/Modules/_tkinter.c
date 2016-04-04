@@ -699,7 +699,7 @@ Tcl_AppInit(Tcl_Interp *interp)
     }
 #endif
 
-    if (Tk_Init(interp) == TCL_ERROR) {
+    if (call_log(Tk_Init(interp)) == TCL_ERROR) {
 #ifdef TKINTER_PROTECT_LOADTK
         tk_load_failed = 1;
 #endif
@@ -3036,7 +3036,7 @@ Tkapp_MainLoop(PyObject *selfptr, PyObject *args)
     }
 
     quitMainLoop = 0;
-    while (Tk_GetNumMainWindows() > threshold &&
+    while (call_log(Tk_GetNumMainWindows()) > threshold &&
            !quitMainLoop &&
            !errorInCmd)
     {
@@ -3047,6 +3047,7 @@ Tkapp_MainLoop(PyObject *selfptr, PyObject *args)
             /* Allow other Python threads to run. */
             ENTER_TCL
             result = call_log(Tcl_DoOneEvent(0));
+            printf("%i: result %i\n", __LINE__, result);
             LEAVE_TCL
         }
         else {
@@ -3171,7 +3172,7 @@ Tkapp_TkInit(PyObject *self, PyObject *args)
         return NULL;
     }
     if (_tk_exists == NULL || strcmp(_tk_exists, "1") != 0)     {
-        if (Tk_Init(interp)             == TCL_ERROR) {
+        if (call_log(Tk_Init(interp))             == TCL_ERROR) {
             PyErr_SetString(Tkinter_TclError, call_log(Tcl_GetStringResult(Tkapp_Interp(self))));
 #ifdef TKINTER_PROTECT_LOADTK
             tk_load_failed = 1;
@@ -3616,7 +3617,7 @@ static void
 DisableEventHook(void)
 { fkt_log
 #ifdef WAIT_FOR_STDIN
-    if (Tk_GetNumMainWindows() == 0 && PyOS_InputHook == EventHook) {
+    if (call_log(Tk_GetNumMainWindows()) == 0 && PyOS_InputHook == EventHook) {
         PyOS_InputHook = NULL;
     }
 #endif
@@ -3694,7 +3695,7 @@ init_tkinter(void)
      * in the other order, but for now it doesn't seem to.
      *
      */
-    Tk_MacOSXSetupTkNotifier();
+    call_log(Tk_MacOSXSetupTkNotifier());
 #endif
 
 
