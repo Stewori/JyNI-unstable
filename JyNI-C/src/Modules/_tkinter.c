@@ -3046,7 +3046,7 @@ Tkapp_MainLoop(PyObject *selfptr, PyObject *args)
         if (self && self->threaded) {
             /* Allow other Python threads to run. */
             ENTER_TCL
-            result = call_log(Tcl_DoOneEvent(0));
+            result = call_log(Tcl_DoOneEvent(TCL_DONT_WAIT));
             printf("%i: result %i\n", __LINE__, result);
             LEAVE_TCL
         }
