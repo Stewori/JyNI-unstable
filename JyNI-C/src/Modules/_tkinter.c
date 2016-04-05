@@ -223,7 +223,7 @@ static PyThreadState *tcl_tstate = NULL;
         if(tcl_lock)PyThread_acquire_lock(tcl_lock, 1); tcl_tstate = tstate;
 
 #define LEAVE_TCL \
-	msg_log("LEAVE_TCL"); tcl_tstate = NULL; if(tcl_lock)PyThread_release_lock(tcl_lock); Py_END_ALLOW_THREADS}
+    msg_log("LEAVE_TCL"); tcl_tstate = NULL; if(tcl_lock)PyThread_release_lock(tcl_lock); Py_END_ALLOW_THREADS}
 
 #define ENTER_OVERLAP \
     Py_END_ALLOW_THREADS
@@ -653,7 +653,7 @@ SplitObj(PyObject *arg)
         list = PyString_AsString(s);
 
         if (list == NULL ||
-        	call_log(Tcl_SplitList((Tcl_Interp *)NULL, list, &argc, &argv)) != TCL_OK) {
+            call_log(Tcl_SplitList((Tcl_Interp *)NULL, list, &argc, &argv)) != TCL_OK) {
             Py_DECREF(s);
             Py_INCREF(arg);
             return arg;
@@ -770,13 +770,13 @@ Tkapp_New(char *screenName, char *baseName, char *className,
     call_log(Tcl_DeleteCommand(v->interp, "exit"));
 
     if (screenName != NULL)
-    	call_log(Tcl_SetVar2(v->interp, "env", "DISPLAY",
+        call_log(Tcl_SetVar2(v->interp, "env", "DISPLAY",
                     screenName, TCL_GLOBAL_ONLY));
 
     if (interactive)
-    	call_log(Tcl_SetVar(v->interp, "tcl_interactive", "1", TCL_GLOBAL_ONLY));
+        call_log(Tcl_SetVar(v->interp, "tcl_interactive", "1", TCL_GLOBAL_ONLY));
     else
-    	call_log(Tcl_SetVar(v->interp, "tcl_interactive", "0", TCL_GLOBAL_ONLY));
+        call_log(Tcl_SetVar(v->interp, "tcl_interactive", "0", TCL_GLOBAL_ONLY));
 
     /* This is used to get the application class for Tk 4.1 and up */
     argv0 = (char*)attemptckalloc(strlen(className) + 1);
@@ -793,12 +793,12 @@ Tkapp_New(char *screenName, char *baseName, char *className,
     ckfree(argv0);
 
     if (! wantTk) {
-    	call_log(Tcl_SetVar(v->interp,
+        call_log(Tcl_SetVar(v->interp,
                         "_tkinter_skip_tk_init", "1", TCL_GLOBAL_ONLY));
     }
 #ifdef TKINTER_PROTECT_LOADTK
     else if (tk_load_failed) {
-    	call_log(Tcl_SetVar(v->interp,
+        call_log(Tcl_SetVar(v->interp,
                         "_tkinter_tk_failed", "1", TCL_GLOBAL_ONLY));
     }
 #endif
@@ -973,7 +973,7 @@ PyTclObject_cmp(PyTclObject *self, PyTclObject *other)
 { fkt_log
     int res;
     res = strcmp(call_log(Tcl_GetString(self->value)),
-    		call_log(Tcl_GetString(other->value)));
+            call_log(Tcl_GetString(other->value)));
     if (res < 0) return -1;
     if (res > 0) return 1;
     return 0;
@@ -1409,7 +1409,7 @@ FromObj(PyObject* tkapp, Tcl_Obj *value)
         return result;
 #else
         return PyUnicode_FromUnicode(call_log(Tcl_GetUnicode(value)),
-        		call_log(Tcl_GetCharLength(value)));
+                call_log(Tcl_GetCharLength(value)));
 #endif
 #else
         int size;
@@ -1574,7 +1574,7 @@ Tkapp_CallProc(Tkapp_CallEvent *e, int flags)
         *(e->exc_tb) = NULL;
         *(e->exc_value) = PyObject_CallFunction(
             Tkinter_TclError, "s",
-			call_log(Tcl_GetStringResult(e->self->interp)));
+            call_log(Tcl_GetStringResult(e->self->interp)));
     }
     else {
         *(e->res) = Tkapp_CallResult(e->self);
@@ -1584,9 +1584,9 @@ Tkapp_CallProc(Tkapp_CallEvent *e, int flags)
     Tkapp_CallDeallocArgs(objv, objStore, objc);
 done:
     /* Wake up calling thread. */
-	call_log(Tcl_MutexLock(&call_mutex));
-	call_log(Tcl_ConditionNotify(e->done));
-	call_log(Tcl_MutexUnlock(&call_mutex));
+    call_log(Tcl_MutexLock(&call_mutex));
+    call_log(Tcl_ConditionNotify(e->done));
+    call_log(Tcl_MutexUnlock(&call_mutex));
     return 1;
 }
 
@@ -1818,7 +1818,7 @@ Tkapp_AddErrorInfo(PyObject *self, PyObject *args)
     CHECK_TCL_APPARTMENT;
 
     ENTER_TCL
-	call_log(Tcl_AddErrorInfo(Tkapp_Interp(self), msg));
+    call_log(Tcl_AddErrorInfo(Tkapp_Interp(self), msg));
     LEAVE_TCL
 
     Py_INCREF(Py_None);
@@ -2483,7 +2483,7 @@ PythonCmd(ClientData clientData, Tcl_Interp *interp, int argc, char *argv[])
         return PythonCmd_Error(interp);
     }
     else {
-    	call_log(Tcl_SetObjResult(interp, obj_res));
+        call_log(Tcl_SetObjResult(interp, obj_res));
         rv = TCL_OK;
     }
 
@@ -2771,7 +2771,7 @@ Tkapp_CreateFileHandler(PyObject *self, PyObject *args)
 
     /* Ought to check for null Tcl_File object... */
     ENTER_TCL
-	call_log(Tcl_CreateFileHandler(tfile, mask, FileHandler, (ClientData) data));
+    call_log(Tcl_CreateFileHandler(tfile, mask, FileHandler, (ClientData) data));
     LEAVE_TCL
     Py_INCREF(Py_None);
     return Py_None;
@@ -2814,7 +2814,7 @@ Tkapp_DeleteFileHandler(PyObject *self, PyObject *args)
 
     /* Ought to check for null Tcl_File object... */
     ENTER_TCL
-	call_log(Tcl_DeleteFileHandler(tfile));
+    call_log(Tcl_DeleteFileHandler(tfile));
     LEAVE_TCL
     Py_INCREF(Py_None);
     return Py_None;
@@ -2841,7 +2841,7 @@ Tktt_DeleteTimerHandler(PyObject *self, PyObject *args)
     if (!PyArg_ParseTuple(args, ":deletetimerhandler"))
         return NULL;
     if (v->token != NULL) {
-    	call_log(Tcl_DeleteTimerHandler(v->token));
+        call_log(Tcl_DeleteTimerHandler(v->token));
         v->token = NULL;
     }
     if (func != NULL) {
@@ -3046,8 +3046,8 @@ Tkapp_MainLoop(PyObject *selfptr, PyObject *args)
         if (self && self->threaded) {
             /* Allow other Python threads to run. */
             ENTER_TCL
-            result = call_log(Tcl_DoOneEvent(TCL_DONT_WAIT));
-            printf("%i: result %i\n", __LINE__, result);
+            result = call_log(Tcl_DoOneEvent(0));
+            sprintf(mbuf, "%i: result %i\n", __LINE__, result); debug_log(mbuf);
             LEAVE_TCL
         }
         else {
@@ -3291,7 +3291,7 @@ Tkapp_Dealloc(PyObject *self)
 { fkt_log
     /*CHECK_TCL_APPARTMENT;*/
     ENTER_TCL
-	call_log(Tcl_DeleteInterp(Tkapp_Interp(self)));
+    call_log(Tcl_DeleteInterp(Tkapp_Interp(self)));
     LEAVE_TCL
     PyObject_Del(self);
     DisableEventHook();

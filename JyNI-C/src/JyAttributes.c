@@ -113,10 +113,10 @@ inline void JyNI_ClearJyAttribute(JyObject* obj, const char* name)
 }
 
 //No hashing is done, since use of JyAttributes is expected to be rare.
-inline void* _JyNI_GetJyAttribute(JyObject* obj, const char* name)
+inline void* JyNI_GetJyAttribute(JyObject* obj, const char* name)
 {
-	jputs(__FUNCTION__);
-	jputs(name);
+	//jputs(__FUNCTION__);
+	//jputs(name);
 	JyAttribute* nxt = obj->attr;
 	while (nxt != NULL)
 	{
